@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>sva_spoiler</id>
+	<title>Spoiler BBcode</title>
+	<version>1.0.0</version>
+	<description>Add BBcode tag «spoiler»</description>
+	<author>Visman (visman@inbox.ru)</author>
+
+	<minversion>1.4.2</minversion>
+	<maxtestedon>1.4.2</maxtestedon>
+
+	<hooks>
+		<!-- -->
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			$tags_without_attr[] = 'spoiler';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags[] = 'spoiler';
+			$tags_opened[] = 'spoiler';
+			$tags_closed[] = 'spoiler';
+			$tags_nested['spoiler'] = 5;
+			$tags_block[] = 'spoiler';
+			$tags_fix[] = 'spoiler';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="ps_do_bbcode_start"><![CDATA[
+			if (strpos($text, '[spoiler') !== false)
+			{
+				$text = str_replace('[spoiler]', "</p><div class=\"quotebox\" style=\"padding: 0px;\"><div onclick=\"var e,d,c=this.parentNode,a=c.getElementsByTagName('div')[1],b=this.getElementsByTagName('span')[0];if(a.style.display!=''){while(c.parentNode&&(!d||!e||d==e)){e=d;d=(window.getComputedStyle?getComputedStyle(c, null):c.currentStyle)['backgroundColor'];if(d=='transparent'||d=='rgba(0, 0, 0, 0)')d=e;c=c.parentNode;}a.style.display='';a.style.backgroundColor=d;b.innerHTML='&#9650;';}else{a.style.display='none';b.innerHTML='&#9660;';}\" style=\"font-weight: bold; cursor: pointer; font-size: 0.9em;\"><span style=\"padding: 0 5px;\">&#9660;</span>Spoiler</div><div style=\"padding: 6px; margin: 0; display: none;\"><p>", $text);
+				$text = preg_replace('#\[spoiler=(.*?)\]#s', '</p><div class="quotebox" style="padding: 0px;"><div onclick="var e,d,c=this.parentNode,a=c.getElementsByTagName(\'div\')[1],b=this.getElementsByTagName(\'span\')[0];if(a.style.display!=\'\'){while(c.parentNode&&(!d||!e||d==e)){e=d;d=(window.getComputedStyle?getComputedStyle(c, null):c.currentStyle)[\'backgroundColor\'];if(d==\'transparent\'||d==\'rgba(0, 0, 0, 0)\')d=e;c=c.parentNode;}a.style.display=\'\';a.style.backgroundColor=d;b.innerHTML=\'&#9650;\';}else{a.style.display=\'none\';b.innerHTML=\'&#9660;\';}" style="font-weight: bold; cursor: pointer; font-size: 0.9em;"><span style="padding: 0 5px;">&#9660;</span>$1</div><div style="padding: 6px; margin: 0; display: none;"><p>', $text);
+				$text = str_replace('[/spoiler]', '</p></div></div><p>', $text);
+			}
+		]]></hook>
+
+
+		<!-- pun_bbcode - add button -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name' => 'sva_spoiler', 'title' => 'spoiler', 'tag' => 'spoiler', 'image' => true));
+		]]></hook>
+
+
+		<!-- pun_bbcode - add styles for button -->
+		<hook id="pun_bbcode_styles_loaded"><![CDATA[
+			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
+				$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_sva_spoiler.image{background-image:url("'.$ext_info['url'].'/img/sp.png")}', array('type' => 'inline'));
+			}
+		]]></hook>
+
+
+	</hooks>
+</extension>
