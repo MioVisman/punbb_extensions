@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>sva_mediajs</id>
+	<title>Media.js</title>
+	<version>0.8.3</version>
+	<description>Modification on the party of the user replaces links to a media content.</description>
+	<author>Visman (visman@inbox.ru)</author>
+
+	<minversion>1.4.2</minversion>
+	<maxtestedon>1.4.2</maxtestedon>
+
+	<hooks>
+
+
+		<hook id="ps_handle_url_tag_end"><![CDATA[
+		  if (!$bbcode && !defined('PUN_MEDIA_JS_INCLUDE'))
+		  {
+				define('PUN_MEDIA_JS_INCLUDE', 1);
+				global $forum_loader;
+
+				$forum_loader->add_js('PUNBB.env.sva_mediajs = {url_swf: "'.forum_htmlencode($ext_info['url']).'"};', array('type' => 'inline'));
+				$forum_loader->add_js($ext_info['url'].'/js/media.min.js', array('type' => 'url', 'async' => true));
+			}
+		]]></hook>
+
+
+	</hooks>
+</extension>
