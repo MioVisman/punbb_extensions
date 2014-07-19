@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * Stop Bot
+ *
+ * sva_stop_bot
+ * Copyright (C) 2014 Visman (visman@inbox.ru)
+ * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ */
+-->
+
+<extension engine="1.0">
+	<id>sva_stop_bot</id>
+	<title>Stop Bot</title>
+	<version>0.1</version>
+	<description>Complicates registration for bots. Only registration!</description>
+	<author>Visman (visman@inbox.ru)</author>
+
+	<minversion>1.4.2</minversion>
+	<maxtestedon>1.4.2</maxtestedon>
+
+	<hooks>
+		<hook id="rg_start"><![CDATA[
+			include $ext_info['path'].'/sva_stop_bot.inc.php';
+
+			// Load LANG
+			if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/sva_stop_bot.php')) {
+				include $ext_info['path'].'/lang/'.$forum_user['language'].'/sva_stop_bot.php';
+			} else {
+				include $ext_info['path'].'/lang/English/sva_stop_bot.php';
+			}
+
+			if (isset($_POST['form_sent'])) {
+				$sva_stop_bot = sva_sb::singleton();
+				$sva_stop_bot->set_encrypt_vars(sha1($forum_user['csrf_token']), md5(get_remote_address()));
+				$sva_stop_bot->add_for_empty(array('email1', 'username'));
+				$sva_stop_bot->form_verification();
+			}
+		]]></hook>
+
+
+		<hook id="rg_end"><![CDATA[
+			$sva_stop_bot = sva_sb::singleton();
+			$sva_stop_bot->set_encrypt_vars(sha1($forum_user['csrf_token']), md5(get_remote_address()));
+
+			$tpl_temp = forum_trim(ob_get_contents());
+			$tpl_temp = $sva_stop_bot->form_parser($tpl_temp, 'afocus');
+			ob_end_clean();
+
+			echo $tpl_temp;
+		]]></hook>
+
+
+		<hook id="rg_register_output_start"><![CDATA[
+			$sva_stop_bot = sva_sb::singleton();
+		  $errors = $sva_stop_bot->get_errors($errors, $lang_sva_stop_bot);
+		]]></hook>
+
+
+
+		<hook id="rg_register_pre_email"><![CDATA[
+			$sva_stop_bot = sva_sb::singleton();
+			$sva_stop_bot->add_for_nch(array('email1', 'username'));
+?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_profile['E-mail'] ?></span> <small><?php echo $lang_sva_stop_bot['Honeypot field help'] ?></small></label><br />
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email1" value="" size="35" maxlength="80" spellcheck="false" autocomplete="off" /></span>
+					</div>
+				</div>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_profile['Username'] ?></span> <small><?php echo $lang_sva_stop_bot['Honeypot field help'] ?></small></label><br />
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="username" value="" size="35" maxlength="25" spellcheck="false" autocomplete="off" /></span>
+					</div>
+				</div>
+<?php
+		]]></hook>
+		
+		<!-- -->
+
+
+	</hooks>
+</extension>
