@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>sva_mediajs</id>
 	<title>Media.js</title>
-	<version>0.9.9</version>
+	<version>0.9.10</version>
 	<description>Modification on the party of the user replaces links to a media content.</description>
 	<author>Visman (visman@inbox.ru)</author>
 
@@ -15,7 +15,7 @@
 	<hooks>
 
 
-		<hook id="ps_handle_url_tag_end"><![CDATA[
+		<hook id="ps_handle_url_tag_start"><![CDATA[
 		  if (!$bbcode && !defined('PUN_MEDIA_JS_INCLUDE'))
 		  {
 				define('PUN_MEDIA_JS_INCLUDE', 1);
