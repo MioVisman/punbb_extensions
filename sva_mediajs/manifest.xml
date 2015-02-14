@@ -5,9 +5,9 @@
 <extension engine="1.0">
 	<id>sva_mediajs</id>
 	<title>Media.js</title>
-	<version>0.9.11</version>
+	<version>1.0.0</version>
 	<description>Modification on the party of the user replaces links to a media content.</description>
-	<author>Visman (visman@inbox.ru)</author>
+	<author>Visman (mio.visman@yandex.ru)</author>
 
 	<minversion>1.4.2</minversion>
 	<maxtestedon>1.4.2</maxtestedon>
