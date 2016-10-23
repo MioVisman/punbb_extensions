@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>sva_awesome</id>
+	<title>Font Awesome</title>
+	<version>0.0.1</version>
+	<description>Add Font Awesome</description>
+	<author>Visman (mio.visman@yandex.ru)</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<hooks>
+		<!-- -->
+		<hook id="hd_head"><![CDATA[
+			$forum_loader->add_css($ext_info['url'].'/css/font-awesome.min.css', array('type' => 'url', 'weight' => '90', 'media' => 'screen'));
+
+			if (file_exists($ext_info['path'].'/style/'.$forum_user['style'].'.css'))
+				$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'.css', array('type' => 'url', 'weight' => '100', 'media' => 'screen'));
+			else
+				$forum_loader->add_css($ext_info['url'].'/style/default.css', array('type' => 'url', 'weight' => '100', 'media' => 'screen'));
+		]]></hook>
+
+
+	</hooks>
+</extension>

@@ -1,0 +1,43 @@
+#brd-navlinks li a::before {
+    font-family: FontAwesome;
+}
+
+#navuserlist > a::before {
+    content: "\f0c0\20";
+}
+
+#navprofile > a::before {
+    content: "\f007\20";
+}
+
+#navsearch > a::before {
+    content: "\f002\20";
+}
+
+#navlogout > a::before {
+    content: "\f08b\20";
+}
+
+#navlogin > a::before {
+    content: "\f090\20";
+}
+
+#navregister > a::before {
+    content: "\f00c\20";
+}
+
+#navindex > a::before {
+    content: "\f015\20";
+}
+
+#navadmin > a::before {
+    content: "\f0ad\20";
+}
+
+#nav_pun_pm > a::before {
+    content: "\f0e6\20";
+}
+
+#navrules > a::before {
+    content: "\f0f6\20";
+}
