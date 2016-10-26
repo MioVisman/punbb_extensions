@@ -6,7 +6,7 @@
  * Stop Bot
  *
  * sva_stop_bot
- * Copyright (C) 2014 Visman (visman@inbox.ru)
+ * Copyright (C) 2014-2016 Visman (mio.visman@yandex.ru)
  * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
  */
 -->
@@ -14,12 +14,20 @@
 <extension engine="1.0">
 	<id>sva_stop_bot</id>
 	<title>Stop Bot</title>
-	<version>0.1</version>
+	<version>0.2</version>
 	<description>Complicates registration for bots. Only registration!</description>
-	<author>Visman (visman@inbox.ru)</author>
+	<author>Visman (mio.visman@yandex.ru)</author>
 
 	<minversion>1.4.2</minversion>
-	<maxtestedon>1.4.2</maxtestedon>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<install><![CDATA[
+		forum_config_add('o_sva_stop_bot_key', random_key(25));
+	]]></install>
+
+	<uninstall><![CDATA[
+		forum_config_remove(array('o_sva_stop_bot_key'));
+	]]></uninstall>
 
 	<hooks>
 		<hook id="rg_start"><![CDATA[
@@ -34,7 +42,7 @@
 
 			if (isset($_POST['form_sent'])) {
 				$sva_stop_bot = sva_sb::singleton();
-				$sva_stop_bot->set_encrypt_vars(sha1($forum_user['csrf_token']), md5(get_remote_address()));
+				$sva_stop_bot->set_encrypt_vars(sha1($forum_config['o_sva_stop_bot_key']), md5(get_remote_address().$forum_config['o_sva_stop_bot_key']));
 				$sva_stop_bot->add_for_empty(array('email1', 'username'));
 				$sva_stop_bot->form_verification();
 			}
@@ -43,7 +51,8 @@
 
 		<hook id="rg_end"><![CDATA[
 			$sva_stop_bot = sva_sb::singleton();
-			$sva_stop_bot->set_encrypt_vars(sha1($forum_user['csrf_token']), md5(get_remote_address()));
+			$sva_stop_bot->set_encrypt_vars(sha1($forum_config['o_sva_stop_bot_key']), md5(get_remote_address().$forum_config['o_sva_stop_bot_key']));
+			$sva_stop_bot->add_for_nch(array('email1', 'username'));
 
 			$tpl_temp = forum_trim(ob_get_contents());
 			$tpl_temp = $sva_stop_bot->form_parser($tpl_temp, 'afocus');
@@ -53,16 +62,13 @@
 		]]></hook>
 
 
-		<hook id="rg_register_output_start"><![CDATA[
+		<hook id="rg_register_form_submitted"><![CDATA[
 			$sva_stop_bot = sva_sb::singleton();
-		  $errors = $sva_stop_bot->get_errors($errors, $lang_sva_stop_bot);
+			$errors = $sva_stop_bot->get_errors($errors, $lang_sva_stop_bot);
 		]]></hook>
 
 
-
 		<hook id="rg_register_pre_email"><![CDATA[
-			$sva_stop_bot = sva_sb::singleton();
-			$sva_stop_bot->add_for_nch(array('email1', 'username'));
 ?>
 				<div class="sf-set set hidden">
 					<div class="sf-box text">
@@ -78,9 +84,5 @@
 				</div>
 <?php
 		]]></hook>
-		
-		<!-- -->
-
-
 	</hooks>
 </extension>
