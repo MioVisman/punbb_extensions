@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * Extended ban for email
+ *
+ * sva_ext_ban_for_email
+ * Copyright (C) 2016 Visman (mio.visman@yandex.ru)
+ * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ */
+-->
+
+<extension engine="1.0">
+	<id>sva_ext_ban_for_email</id>
+	<title>Extended ban for email</title>
+	<version>1.0.0</version>
+	<description>Extended ban for email. Examples: ban = exemple.com -> stop: user.name@exemple.com, user.name@www.exemple.com; ban = .org -> stop: all .org domains; ban - user.name@gmail.com -> stop: username@gmail.com, u.s.e.r.n.a.m.e+tag@gmail.com.</description>
+	<author>Visman (mio.visman@yandex.ru)</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<hooks>
+		<hook id="em_fn_is_valid_email_start"><![CDATA[
+	if (isset($_POST['add_edit_ban']) && false === strrpos($email, '@')) {
+		return preg_match('/^\.?(?:[a-z\d][a-z\d-]*\.)*[a-z]{2,}$/', $email);
+	}
+		]]></hook>
+
+		<hook id="em_fn_is_banned_email_start"><![CDATA[
+
+	if (!function_exists('sva_norm_email')) {
+		function sva_norm_email($email)
+		{
+			$i = strrpos($email, '@');
+			if (false === $i) {
+				return $email;
+			}
+
+			$host = substr($email, $i);
+			$user = substr($email, 0, $i);
+
+			if (false !== strpos($host, 'yahoo.')) {
+				$tmp = explode('-', $user, 2);
+				$user = $tmp[0];
+			} else {
+				$tmp = explode('+', $user, 2);
+				$user = $tmp[0];
+			}
+
+			if (false !== strpos($host, 'gmail.com')) {
+				$user = str_replace('.', '', $user);
+			}
+
+			return $user.$host;
+		}
+	}
+
+	$norm_email = sva_norm_email($email);
+
+	foreach ($forum_bans as $cur_ban) {
+		if (empty($cur_ban['email'])) {
+			continue;
+		}
+
+		if (false === strpos($cur_ban['email'], '@')) {
+			$len = strlen($cur_ban['email']);
+			if ($cur_ban['email'][0] == '.') {
+				$tmp = substr($email, -$len);
+				if ($tmp == $cur_ban['email']) {
+					return true;
+				}
+			} else {
+				$tmp = substr($email, -1-$len);
+				if ($tmp == '.'.$cur_ban['email'] || $tmp == '@'.$cur_ban['email']) {
+					return true;
+				}
+			}
+		} else if ($email == $cur_ban['email'] || $norm_email == sva_norm_email($cur_ban['email'])) {
+			return true;
+		}
+	}
+
+	return false;
+		]]></hook>
+	</hooks>
+</extension>
