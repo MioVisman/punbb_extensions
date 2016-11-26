@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>sva_ext_ban_for_email</id>
 	<title>Extended ban for email</title>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<description>Extended ban for email. Examples: ban = exemple.com -> stop: user.name@exemple.com, user.name@www.exemple.com; ban = .org -> stop: all .org domains; ban - user.name@gmail.com -> stop: username@gmail.com, u.s.e.r.n.a.m.e+tag@gmail.com.</description>
 	<author>Visman (mio.visman@yandex.ru)</author>
 
@@ -24,7 +24,7 @@
 	<hooks>
 		<hook id="em_fn_is_valid_email_start"><![CDATA[
 	if (isset($_POST['add_edit_ban']) && false === strrpos($email, '@')) {
-		return preg_match('/^\.?(?:[a-z\d][a-z\d-]*\.)*[a-z]{2,}$/', $email);
+		return preg_match('/^\.?(?:[a-z\d][a-z\d-]*\.)*[a-z]{2,}$/D', $email);
 	}
 		]]></hook>
 
