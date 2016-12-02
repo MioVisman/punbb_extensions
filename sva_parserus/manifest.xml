@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * Parserus for PunBB
+ *
+ * sva_parserus
+ * Copyright (C) 2016 Visman (mio.visman@yandex.ru)
+ * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ */
+-->
+
+<extension engine="1.0">
+	<id>sva_parserus</id>
+	<title>Parserus for PunBB * TEST *</title>
+	<version>0.0.8</version>
+	<description>TEST * My bbcode parser for PunBB * TEST</description>
+	<author>Visman (mio.visman@yandex.ru)</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+    <minphpversion>1.5.4</minphpversion>
+
+	<hooks>
+		<hook id="es_essentials" priority="2"><![CDATA[
+include $ext_info['path'].'/hooks/es_essentials.php';
+		]]></hook>
+
+		<hook id="ps_start" priority="10"><![CDATA[
+include $ext_info['path'].'/hooks/ps_start.php';
+		]]></hook>
+
+		<hook id="ps_parse_message_start" priority="1"><![CDATA[
+return include $ext_info['path'].'/hooks/ps_parse_message_start.php';
+		]]></hook>
+
+		<hook id="ps_parse_signature_start" priority="1"><![CDATA[
+return include $ext_info['path'].'/hooks/ps_parse_signature_start.php';
+		]]></hook>
+
+		<hook id="ps_preparse_bbcode_start" priority="1"><![CDATA[
+return include $ext_info['path'].'/hooks/ps_preparse_bbcode_start.php';
+		]]></hook>
+
+	</hooks>
+</extension>
