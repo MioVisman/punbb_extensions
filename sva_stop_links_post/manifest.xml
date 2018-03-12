@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>sva_stop_links_post</id>
 	<title>Stop links post</title>
-	<version>0.9</version>
+	<version>0.9.1</version>
 	<description>This extension forbids to publish links for new user (number of posts less 6).</description>
 	<author>Visman (mio.visman@yandex.ru)</author>
 
@@ -29,16 +29,18 @@
 						global $sva_slp_bu;
 
 						$patterns = [
-							'%\[url[=\]](?!https?://' . $sva_slp_bu . ')%i', // ?
-							'%https?://(?!' . $sva_slp_bu . ')%i',           // ?
-							'%www\.[\p{L}\p{N}]%iu',
-							'%\b[\p{L}\p{N}](?:[\p{L}\p{N}-]+\.)+(?:xn\-\-[a-z0-9]+|a[cdefgilmnoqrstuwxz]|b[abdefghijmnorstvwyz]|c[acdfghiklmnoruvxyz]|d[dejkmozcegrstu]|f[ijkmor]|g[abdefghilmnpqrstuwy]|h[kmnrtu]|i[delmnoqrst]|j[emop]|k[eghimnprwyz]|krd|l[abcikrstuvy]|m[acdeghklmnopqrstuvwxyz]|n[acefgilopruz]|om|p[aefghklmnrstwy]|qa|r[eosuw]|s[abcdeghijklmnortuvyz]|t[cdfghjklmnoprtvwz]|u[agksyz]|v[aceginu]|w[fs]|y[et]|z[amw]|бел|мон|срб|рф|укр|academy|accountant|accountants|active|actor|adult|aero|agency|airforce|apartments|app|archi|army|associates|asia|attorney|auction|audio|autos|biz|cat|com|coop|dance|edu|gov|info|int|jobs|mil|mobi|museum|name|net|one|ong|onl|online|ooo|org|organic|partners|parts|party|pharmacy|photo|photography|photos|physio|pics|pictures|feedback|pink|pizza|place|plumbing|plus|poker|porn|post|press|pro|productions|prof|properties|property|qpon|racing|recipes|red|rehab|ren|rent|rentals|repair|report|republican|rest|review|reviews|rich|site|tel|travel|xxx|xyz|yoga|zone)\b(?!\.)%u'
+							'%\[url[=\]].*?\[/url\]%i',
+							'%https?://\S+%i',
+							'%www\.[\p{L}\p{N}]\S+%iu',
+							'%\b(?<![@.])[\p{L}\p{N}](?:[\p{L}\p{N}-]+\.)+(?:xn\-\-[a-z0-9]+|a[cdefgilmnoqrstuwxz]|b[abdefghijmnorstvwyz]|c[acdfghiklmnoruvxyz]|d[dejkmozcegrstu]|f[ijkmor]|g[abdefghilmnpqrstuwy]|h[kmnrtu]|i[delmnoqrst]|j[emop]|k[eghimnprwyz]|krd|l[abcikrstuvy]|m[acdeghklmnopqrstuvwxyz]|n[acefgilopruz]|om|p[aefghklmnrstwy]|qa|r[eosuw]|s[abcdeghijklmnortuvyz]|t[cdfghjklmnoprtvwz]|u[agksyz]|v[aceginu]|w[fs]|y[et]|z[amw]|бел|мон|срб|рф|укр|academy|accountant|accountants|active|actor|adult|aero|agency|airforce|apartments|app|archi|army|associates|asia|attorney|auction|audio|autos|biz|cat|com|coop|dance|edu|gov|info|int|jobs|mil|mobi|museum|name|net|one|ong|onl|online|ooo|org|organic|partners|parts|party|pharmacy|photo|photography|photos|physio|pics|pictures|feedback|pink|pizza|place|plumbing|plus|poker|porn|post|press|pro|productions|prof|properties|property|qpon|racing|recipes|red|rehab|ren|rent|rentals|repair|report|republican|rest|review|reviews|rich|site|tel|travel|xxx|xyz|yoga|zone)\b(?![.])%u'
 						];
 
 						foreach ($arr as $val) {
 							if (is_array($val) && sva_stop_links_post($val)) {
 								return true;
 							}
+
+							$val = preg_replace('%(?:\[url[=\]])?(?:https?://)?(?:www\.)?'. $sva_slp_bu . '(?![.])\S+%i', '', $val);
 
 							if (null !== preg_replace($patterns, '', $val, -1, $count) && $count > 0) {
 								return true;
@@ -49,7 +51,11 @@
 					}
 				}
 
-				$sva_slp_bu = preg_quote(str_replace(['http://', 'https://'], '', $base_url), '%');
+				$sva_slp_bu = parse_url($base_url, PHP_URL_HOST);
+				if (0 === strpos($sva_slp_bu, 'www.')) {
+					$sva_slp_bu = substr($sva_slp_bu, 4);
+				}
+				$sva_slp_bu = preg_quote($sva_slp_bu, '%');
 
 				if (sva_stop_links_post($_POST)) {
 					// Load LANG
