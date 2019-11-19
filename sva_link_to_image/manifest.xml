@@ -6,7 +6,7 @@
  * Link to image
  *
  * sva_link_to_image
- * Copyright (C) 2018 Visman (mio.visman@yandex.ru)
+ * Copyright (C) 2018-2019 Visman (mio.visman@yandex.ru)
  * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
  */
 -->
@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>sva_link_to_image</id>
 	<title>Link to image</title>
-	<version>0.9.1</version>
+	<version>0.9.2</version>
 	<description>This extension converts links to images.</description>
 	<author>Visman (mio.visman@yandex.ru)</author>
 
@@ -24,11 +24,11 @@
 	<hooks>
 		<hook id="ps_preparse_bbcode_start"><![CDATA[
 			if ($forum_config['p_message_bbcode'] == '1' && ! $is_signature && $forum_config['o_make_links'] == '1') {
-				$text = preg_replace_callback('%\[code\](?:(?>.*?(?=\[(?:code|/code)\]))|(?R))*\[/code\]|\b(?<!=)(https?://[^\[\]\s]++)(?=$|\[|\s)(?!\[/(?:img|url)\])(?<=\.jpeg|\.jpg|\.gif|\.png)%is',
-				function($match) {
-					return empty($match[1]) ? $match[0] : '[img]' . $match[1] . '[/img]';
-				},
-				$text);
+				$text = preg_replace_callback('%\[code\](?:(?>.*?(?=\[(?:code|/code)\]))|(?R))*\[/code\]|\b(?<!=)(https?://[^\[\]\s]++)(?=$|\[|\s)(?!\[/(?:img|url)\])(?<=\.jpeg|\.jpg|\.gif|\.png|\.webp)%is',
+					function($match) {
+						return empty($match[1]) ? $match[0] : '[img]' . $match[1] . '[/img]';
+					},
+					$text);
 			}
 		]]></hook>
 	</hooks>
