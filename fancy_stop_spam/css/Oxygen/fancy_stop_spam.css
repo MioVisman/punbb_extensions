@@ -1,0 +1,16 @@
+.fancy_stop_spam_table {
+	table-layout: auto;
+}
+
+.fancy_spam_status_email_spam td,
+.fancy_spam_status_ip_spam td {
+	background: #FFEDED !important;
+}
+
+.fancy_stop_spam_table .number_posts,
+.fancy_stop_spam_table .number_logs {
+	text-align: center;
+	width: 10%;
+}
+
+
