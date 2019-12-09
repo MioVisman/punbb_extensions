@@ -9,7 +9,7 @@ $lang_fancy_stop_spam = array(
 
 	'First Post Max Links' 				=> 'Ссылок в первом сообщении',
 	'First Post Max Links Help'			=> 'Максимум ссылок в первом сообщении. Если значение < 0 — проверка отключена.',
-	'First Post Guest Max Links'		=> 'Ссылок в первом сообщении гостя',
+	'First Post Guest Max Links'		=> 'Ссылок в сообщении гостя',
 	'First Post Guest Max Links Help'	=> 'Максимум ссылок в сообщении гостя. Если значение < 0 — проверка отключена.',
 
 	'Go to settings'					=> 'Настройки',
@@ -43,7 +43,7 @@ $lang_fancy_stop_spam = array(
 	'Activate bot message'			=> 'Извините, мы думаем что вы бот. Вы не можите активировать учётную запись.',
 
 	'Honey field'					=> 'Анти СПАМ',
-	'Honey field help'				=> 'Оставьте это поле пустым.',
+	'Honey field help'				=> 'Это поле не для человека.',
 
 	'Enable Logs'					=> 'Записывать попытки спама в журнал',
 
@@ -87,6 +87,7 @@ $lang_fancy_stop_spam = array(
 	'log event name 9'						=> 'Register IP SFS',
 	'log event name 10'						=> 'Register IP SFS (cached)',
 	'log event name 11'						=> 'Register honeypot repeated',
+	'log event name 19'						=> 'Register data integrity',
 
 	'log event name 70'						=> 'Activate submit',
 	'log event name 71'						=> 'Activate honeypot',

@@ -43,6 +43,7 @@ class Fancy_stop_spam
     const LOG_REGISTER_EMAIL_SFS_IP_CACHED  = 8;
     const LOG_REGISTER_IP_SFS               = 9;
     const LOG_REGISTER_IP_SFS_CACHED        = 10;
+    const LOG_REGISTER_INTEGRITY            = 19;
 
     // LOGS EVENTS POST
     const LOG_POST_SUBMIT                   = 20;
@@ -191,7 +192,8 @@ class Fancy_stop_spam
 
 
     //
-    public function check_register_honeypot_repeated($ip) {
+    public function check_register_honeypot_repeated($ip)
+    {
         global $forum_db;
 
         if (empty($ip)) {
@@ -202,7 +204,7 @@ class Fancy_stop_spam
             'SELECT'    => 'COUNT(ip)',
             'FROM'      => 'fancy_stop_spam_logs',
             'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2hex($ip)).'\' AND
-                            activity_type='.self::LOG_REGISTER_HONEYPOT.' AND
+                            activity_type IN ('.self::LOG_REGISTER_HONEYPOT.','.self::LOG_REGISTER_HONEYPOT_EMPTY.') AND
                             activity_time > '.(time() - self::TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK),
         );
         $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
@@ -434,8 +436,8 @@ class Fancy_stop_spam
                         $username_row = forum_htmlencode($act['username']);
                     } else {
                         $username_row = '<a href="'.forum_link($forum_url['user'], forum_htmlencode(intval($act['user_id']))).'">'.
-                                        forum_htmlencode($act['username']).
-                                    '</a>';
+                            forum_htmlencode($act['username']).
+                            '</a>';
                     }
                 }
 
@@ -539,8 +541,8 @@ class Fancy_stop_spam
                         $username_row = forum_htmlencode($founded_user['username']);
                     } else {
                         $username_row = '<a href="'.forum_link($forum_url['user'], forum_htmlencode(intval($founded_user['id']))).'">'.
-                                        forum_htmlencode($founded_user['username']).
-                                    '</a>';
+                            forum_htmlencode($founded_user['username']).
+                            '</a>';
                     }
                 }
 
@@ -764,28 +766,23 @@ class Fancy_stop_spam
         $result = false;
 
         if (!empty($data)) {
-            if (function_exists('json_decode')) {
-                $data['f'] = 'json';
-            } else {
-                $data['f'] = 'serial';
-            }
+            $check_url = 'http://api.stopforumspam.org/api?'.http_build_query($data).'&unix';
+            $check_url .= function_exists('json_decode') ? '&json' : '&serial';
 
-            $data['unix'] = '1';
-
-            $check_url = 'http://api.stopforumspam.org/api?'.http_build_query($data);
             $check_result = get_remote_file($check_url, 15, false, 2);
 
             if (isset($check_result['content']) !== false && !empty($check_result['content'])) {
-                if ($data['f'] == 'json') {
+                if (function_exists('json_decode')) {
                     $result_data = json_decode($check_result['content'], true);
                 } else {
                     $result_data = unserialize($check_result['content']);
                 }
-
-                if (!empty($result_data)) {
-                    if (is_array($result_data) && isset($result_data['success']) && intval($result_data['success']) === 1) {
-                        $result = $result_data;
-                    }
+                if (!empty($result_data)
+                    && is_array($result_data)
+                    && isset($result_data['success'])
+                    && intval($result_data['success']) === 1
+                ) {
+                    $result = $result_data;
                 }
             }
         }
