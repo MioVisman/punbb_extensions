@@ -119,11 +119,10 @@ class Fancy_stop_spam
         // CLEAR OLD ENTRIES
         $this->clear_old_logs();
 
-        $now = time();
         $query = array(
             'INSERT'    => 'user_id, ip, activity_type, activity_time, comment',
             'INTO'      => 'fancy_stop_spam_logs',
-            'VALUES'    => intval($user_id).', \''.$forum_db->escape($this->ip2hex($user_ip)).'\', '.intval($activity_type).', '.$now.', \''.$forum_db->escape($comment).'\'',
+            'VALUES'    => intval($user_id).', \''.$forum_db->escape($this->ip2hex($user_ip)).'\', '.intval($activity_type).', '.time().', \''.$forum_db->escape($comment).'\'',
         );
         $forum_db->query_build($query) or error(__FILE__, __LINE__);
     }
@@ -133,8 +132,6 @@ class Fancy_stop_spam
     public function identical_message_check($poster_id, $message_hash)
     {
         global $forum_db;
-
-        $is_spam = false;
 
         // REMOVE EXPIRED
         $this->identical_message_prune_expired();
@@ -180,7 +177,7 @@ class Fancy_stop_spam
         $user_id = intval($user_id);
 
         // Update the user table
-        if ($user_id > 0) {
+        if ($user_id > 1) {
             $query = array(
                 'UPDATE'    => 'users',
                 'SET'       => 'fancy_stop_spam_bot = fancy_stop_spam_bot + 1',
@@ -223,7 +220,7 @@ class Fancy_stop_spam
             $query = array(
                 'SELECT'    => 'COUNT(ip)',
                 'FROM'      => 'fancy_stop_spam_logs',
-                'WHERE'     => 'user_id=\''.$forum_db->escape($user_id).'\' AND
+                'WHERE'     => 'user_id='.$user_id.' AND
                                 activity_type='.self::LOG_IDENTICAL_POST.' AND
                                 activity_time > '.(time() - self::TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK),
             );
@@ -261,7 +258,7 @@ class Fancy_stop_spam
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
-                $this->log(self::LOG_REGISTER_IP_SFS_CACHED, $forum_user['id'], get_remote_address());
+                $this->log(self::LOG_REGISTER_IP_SFS_CACHED, $forum_user['id'], $data['ip']);
                 message($this->lang['Register bot sfs email message']);
             }
 
@@ -291,10 +288,10 @@ class Fancy_stop_spam
                     $query = array(
                         'INSERT'    => 'ip, added',
                         'INTO'      => 'fancy_stop_spam_sfs_ip_cache',
-                        'VALUES'    => '\''.$forum_db->escape($this->ip2hex(get_remote_address())).'\', '.time(),
+                        'VALUES'    => '\''.$forum_db->escape($this->ip2hex($data['ip'])).'\', '.time(),
                     );
                     $forum_db->query_build($query) or error(__FILE__, __LINE__);
-                    $this->log(self::LOG_REGISTER_IP_SFS, $forum_user['id'], get_remote_address());
+                    $this->log(self::LOG_REGISTER_IP_SFS, $forum_user['id'], $data['ip']);
                     message($this->lang['Register bot sfs ip message']);
                 }
             }
@@ -363,28 +360,17 @@ class Fancy_stop_spam
     {
         global $forum_user, $forum_config;
 
-        $return = true;
+        $max_links = intval($forum_user['is_guest'] ? $forum_config['o_fancy_stop_spam_max_guest_links'] : $forum_config['o_fancy_stop_spam_max_links']);
 
-        $max_links = intval($forum_config['o_fancy_stop_spam_max_links']);
-        if ($forum_user['is_guest']) {
-            $max_links = intval($forum_config['o_fancy_stop_spam_max_guest_links']);
+        if ($max_links < 0
+            || $forum_user['is_admmod']
+            || $forum_user['num_posts'] > self::IDENTICAL_USER_MAX_POSTS_FOR_CHECK
+            || $this->get_number_links_in_message($post_message) <= $max_links
+        ) {
+            return true;
+        } else {
+            return sprintf($this->lang['Error many links'], $max_links);
         }
-
-        do {
-            if ($max_links < 0) {
-                break;
-            }
-
-            if ($forum_user['is_admmod'] || ($forum_user['num_posts'] > self::IDENTICAL_USER_MAX_POSTS_FOR_CHECK)) {
-                break;
-            }
-
-            if ($this->get_number_links_in_message($post_message) > $max_links) {
-                $return = sprintf($this->lang['Error many links'], $max_links);
-            }
-        } while(false);
-
-        return $return;
     }
 
 
@@ -540,7 +526,7 @@ class Fancy_stop_spam
                     if ($founded_user['id'] == '1') {
                         $username_row = forum_htmlencode($founded_user['username']);
                     } else {
-                        $username_row = '<a href="'.forum_link($forum_url['user'], forum_htmlencode(intval($founded_user['id']))).'">'.
+                        $username_row = '<a href="'.forum_link($forum_url['user'], intval($founded_user['id'])).'">'.
                             forum_htmlencode($founded_user['username']).
                             '</a>';
                     }
@@ -622,7 +608,7 @@ class Fancy_stop_spam
                 $users_data .= '
                     <tr>
                         <td>
-                            <a href="'.forum_link($forum_url['user'], forum_htmlencode(intval($user['id']))).'">'.
+                            <a href="'.forum_link($forum_url['user'], intval($user['id'])).'">'.
                                 forum_htmlencode($user['username']).'
                             </a>
                         </td>
@@ -881,17 +867,28 @@ class Fancy_stop_spam
     // return number links in post
     private function get_number_links_in_message($post_message)
     {
-        $num_links_http = $num_links_www = 0;
+        global $base_url;
 
-        if (function_exists('mb_substr_count')) {
-            $num_links_http = mb_substr_count($post_message, 'http', 'UTF-8');
-            $num_links_www = mb_substr_count($post_message, 'www', 'UTF-8');
-        } else {
-            $num_links_http = substr_count($post_message, 'http');
-            $num_links_www = substr_count($post_message, 'www');
+        $host = parse_url($base_url, PHP_URL_HOST);
+        if (0 === strpos($host, 'www.')) {
+            $host = substr($host, 4);
         }
 
-        return max($num_links_http, $num_links_www);
+        // Clearing post from internal links
+        if (false !== strpos($post_message, $host)) {
+            $post_message = preg_replace('%(?:\[url[=\]])?(?:https?://)?(?:www\.)?'. preg_quote($host, '%') . '(?![.])\S+%i', '', $post_message);
+        }
+
+        $patterns = [
+            '%\[url[=\]].*?\[/url\]%i',
+            '%https?://\S+%i',
+            '%www\.[\p{L}\p{N}]\S+%iu',
+        ];
+        if (null !== preg_replace($patterns, '', $post_message, -1, $count)) {
+            return $count;
+        } else {
+            return max(substr_count($post_message, 'http'), substr_count($post_message, 'www'));
+        }
     }
 
 
