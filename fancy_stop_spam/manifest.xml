@@ -5,15 +5,23 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54</version>
-	<description>Antispam system for PunBB 1.4</description>
-	<author>dimka.linux@gmail.com</author>
+	<version>1.3.54.1</version>
+	<description>Antispam system for PunBB 1.4.4</description>
+	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
-	<minversion>1.4</minversion>
-	<maxtestedon>1.4.2</maxtestedon>
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<minphpversion>5.4</minphpversion>
 
 
 	<install><![CDATA[
+		if (defined('EXT_CUR_VERSION')
+			&& (version_compare(EXT_CUR_VERSION, '1.3.54.1', '<') || version_compare(EXT_CUR_VERSION, '1.3.54.999', '>'))
+		) {
+			message("1. Save the StopForumSpam API key if specified;<br>2. Uninstall version " . EXT_CUR_VERSION . " of Fancy Stop SPAM;<br>3. Install this version.");
+		}
+
 		// Add extension options to the config table
 		forum_config_add('o_fancy_stop_spam_max_links', '1');
 		forum_config_add('o_fancy_stop_spam_max_guest_links', '1');
@@ -33,122 +41,108 @@
 		forum_config_add('o_fancy_stop_spam_sfs_api_key', '');
 
 
-		if (!$forum_db->table_exists('fancy_stop_spam_identical_posts'))
-		{
-			$schema = array(
-				'FIELDS' => array(
-					'id'		=> array(
-						'datatype'		=> 'SERIAL',
-						'allow_null'	=> false
-					),
-					'poster_id'			=> array(
-						'datatype'		=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false
-					),
-					'post_id'	=> array(
-						'datatype'		=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false
-					),
-					'post_hash' => array(
-						'datatype'		=> 'VARCHAR(40)',
-						'allow_null'	=> false
-					),
-					'posted'			=> array(
-						'datatype'		=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false
-					),
+		$schema = array(
+			'FIELDS' => array(
+				'id'		=> array(
+					'datatype'		=> 'SERIAL',
+					'allow_null'	=> false,
 				),
-				'PRIMARY KEY'	=> array('id'),
-				'ENGINE'		=> 'HEAP'
-			);
-			$forum_db->create_table('fancy_stop_spam_identical_posts', $schema);
-		}
+				'poster_id'			=> array(
+					'datatype'		=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+				),
+				'post_id'	=> array(
+					'datatype'		=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+				),
+				'post_hash' => array(
+					'datatype'		=> 'VARCHAR(40)',
+					'allow_null'	=> false,
+				),
+				'posted'			=> array(
+					'datatype'		=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+				),
+			),
+			'PRIMARY KEY'	=> array('id'),
+		);
+		$forum_db->create_table('fancy_stop_spam_identical_posts', $schema);
 
 
-		if (!$forum_db->table_exists('fancy_stop_spam_logs'))
-		{
-			$schema = array(
-				'FIELDS'	=>	array(
-					'id'			=> array(
-						'datatype'	=> 'SERIAL',
-						'allow_null'	=> false
-					),
-					'user_id'	=>	array(
-						'datatype'	=> 'INT(10)',
-						'allow_null'	=> false,
-						'default'	=> '0',
-					),
-					'ip'	=>	array(
-						'datatype'	=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'	=>	'0',
-					),
-					'activity_type'	=>	array(
-						'datatype'	=> 'INT(10)',
-						'allow_null'	=> false,
-						'default'	=> '0',
-					),
-					'activity_time'	=>	array(
-						'datatype'	=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'	=> '0',
-					),
-					'comment' => array(
-						'datatype'		=> 'VARCHAR(255)',
-						'allow_null'	=> false,
-					),
+		$schema = array(
+			'FIELDS'	=>	array(
+				'id'			=> array(
+					'datatype'	=> 'SERIAL',
+					'allow_null'	=> false,
 				),
-				'PRIMARY KEY'	=>	array('id')
-			);
-			$forum_db->create_table('fancy_stop_spam_logs', $schema);
-		}
+				'user_id'	=>	array(
+					'datatype'	=> 'INT(10)',
+					'allow_null'	=> false,
+					'default'	=> '0',
+				),
+				'ip'	=>	array(
+					'datatype'	=> 'VARCHAR(32)',
+					'allow_null'	=> false,
+				),
+				'activity_type'	=>	array(
+					'datatype'	=> 'INT(10)',
+					'allow_null'	=> false,
+					'default'	=> '0',
+				),
+				'activity_time'	=>	array(
+					'datatype'	=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+					'default'	=> '0',
+				),
+				'comment' => array(
+					'datatype'		=> 'VARCHAR(255)',
+					'allow_null'	=> false,
+				),
+			),
+			'PRIMARY KEY'	=>	array('id'),
+		);
+		$forum_db->create_table('fancy_stop_spam_logs', $schema);
+
 
 		// Add cache table for StopForumSpam Emails
-		if (!$forum_db->table_exists('fancy_stop_spam_sfs_email_cache'))
-		{
-			$schema = array(
-				'FIELDS'	=>	array(
-					'ip'	=>	array(
-						'datatype'	=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'	=>	'0',
-					),
-					'email'			=> array(
-						'datatype'		=> 'VARCHAR(80)',
-						'allow_null'	=> false
-					),
-					'added'	=>	array(
-						'datatype'		=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'		=> '0',
-					),
+		$schema = array(
+			'FIELDS'	=>	array(
+				'ip'	=>	array(
+					'datatype'	=> 'VARCHAR(32)',
+					'allow_null'	=> false,
 				),
-				'PRIMARY KEY'	=>	array('email')
-			);
-			$forum_db->create_table('fancy_stop_spam_sfs_email_cache', $schema);
-		}
-		$forum_db->add_field('fancy_stop_spam_sfs_email_cache', 'ip', 'INT(10) UNSIGNED', false, 0);
+				'email'			=> array(
+					'datatype'		=> 'VARCHAR(80)',
+					'allow_null'	=> false,
+				),
+				'added'	=>	array(
+					'datatype'		=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+					'default'		=> '0',
+				),
+			),
+			'PRIMARY KEY'	=>	array('email'),
+		);
+		$forum_db->create_table('fancy_stop_spam_sfs_email_cache', $schema);
+
 
 		// Add cache table for StopForumSpam IPs
-		if (!$forum_db->table_exists('fancy_stop_spam_sfs_ip_cache'))
-		{
-			$schema = array(
-				'FIELDS'	=>	array(
-					'ip'	=>	array(
-						'datatype'	=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'	=>	'0',
-					),
-					'added'	=>	array(
-						'datatype'		=> 'INT(10) UNSIGNED',
-						'allow_null'	=> false,
-						'default'		=> '0',
-					),
+		$schema = array(
+			'FIELDS'	=>	array(
+				'ip'	=>	array(
+					'datatype'	=> 'VARCHAR(32)',
+					'allow_null'	=> false,
 				),
-				'PRIMARY KEY'	=>	array('ip')
-			);
-			$forum_db->create_table('fancy_stop_spam_sfs_ip_cache', $schema);
-		}
+				'added'	=>	array(
+					'datatype'		=> 'INT(10) UNSIGNED',
+					'allow_null'	=> false,
+					'default'		=> '0',
+				),
+			),
+			'PRIMARY KEY'	=>	array('ip'),
+		);
+		$forum_db->create_table('fancy_stop_spam_sfs_ip_cache', $schema);
+
 
 		$forum_db->add_field('users', 'fancy_stop_spam_bot', 'INT(10) UNSIGNED', false, 0);
 	]]></install>

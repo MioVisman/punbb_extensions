@@ -114,7 +114,7 @@ class Fancy_stop_spam {
         $query = array(
             'INSERT'    => 'user_id, ip, activity_type, activity_time, comment',
             'INTO'      => 'fancy_stop_spam_logs',
-            'VALUES'    => '\''.intval($user_id, 10).'\', \''.$this->ip2long($user_ip).'\', \''.intval($activity_type, 10).'\', \''.$now.'\', \''.$forum_db->escape($comment).'\''
+            'VALUES'    => intval($user_id, 10).', \''.$forum_db->escape($this->ip2hex($user_ip)).'\', '.intval($activity_type, 10).', '.$now.', \''.$forum_db->escape($comment).'\'',
         );
         $forum_db->query_build($query) or error(__FILE__, __LINE__);
     }
@@ -190,7 +190,7 @@ class Fancy_stop_spam {
         $query = array(
             'SELECT'    => 'COUNT(ip)',
             'FROM'      => 'fancy_stop_spam_logs',
-            'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2long($ip)).'\' AND
+            'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2hex($ip)).'\' AND
                             activity_type=\''.$forum_db->escape(self::LOG_REGISTER_HONEYPOT).'\' AND
                             activity_time > '.(time() - self::TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK)
         );
@@ -242,7 +242,7 @@ class Fancy_stop_spam {
             $query = array(
                 'SELECT'    => 'COUNT(ip)',
                 'FROM'      => 'fancy_stop_spam_sfs_ip_cache',
-                'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2long($data['ip'])).'\''
+                'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2hex($data['ip'])).'\''
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
@@ -276,7 +276,7 @@ class Fancy_stop_spam {
                     $query = array(
                         'INSERT'    => 'ip, added',
                         'INTO'      => 'fancy_stop_spam_sfs_ip_cache',
-                        'VALUES'    => '\''.$forum_db->escape($this->ip2long(get_remote_address())).'\', '.time()
+                        'VALUES'    => '\''.$forum_db->escape($this->ip2hex(get_remote_address())).'\', '.time()
                     );
                     $forum_db->query_build($query) or error(__FILE__, __LINE__);
                     $this->log(self::LOG_REGISTER_IP_SFS, $forum_user['id'], get_remote_address());
@@ -311,7 +311,7 @@ class Fancy_stop_spam {
                 $query = array(
                     'SELECT'    => 'COUNT(ip)',
                     'FROM'      => 'fancy_stop_spam_sfs_email_cache',
-                    'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2long($data['ip'])).'\' AND added > '.(time() - self::LIFETIME_SFS_EMAIL_IP_CACHED)
+                    'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2hex($data['ip'])).'\' AND added > '.(time() - self::LIFETIME_SFS_EMAIL_IP_CACHED)
                 );
                 $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
                 if ($forum_db->result($result) > 0) {
@@ -333,7 +333,7 @@ class Fancy_stop_spam {
                     $query = array(
                         'INSERT'    => 'email, added, ip',
                         'INTO'      => 'fancy_stop_spam_sfs_email_cache',
-                        'VALUES'    => '\''.$forum_db->escape($data['email']).'\', '.time().', '.$this->ip2long(get_remote_address())
+                        'VALUES'    => '\''.$forum_db->escape($data['email']).'\', '.time().', '.$this->ip2hex(get_remote_address())
                     );
                     $forum_db->query_build($query) or error(__FILE__, __LINE__);
                     message($this->lang['Register bot sfs email message']);
@@ -379,7 +379,7 @@ class Fancy_stop_spam {
         $out = '';
 
         $query = array(
-            'SELECT'    => 'fl.activity_type, INET_NTOA(fl.ip) AS ip, fl.activity_time, fl.user_id, fl.comment, u.username',
+            'SELECT'    => 'fl.activity_type, fl.ip, fl.activity_time, fl.user_id, fl.comment, u.username',
             'FROM'      => 'fancy_stop_spam_logs AS fl',
             'JOINS'     => array(
                 array(
@@ -396,7 +396,7 @@ class Fancy_stop_spam {
         }
 
         if (!is_null($ip)) {
-            $query['WHERE'] = 'fl.ip = \''.$forum_db->escape($this->ip2long($ip)).'\'';
+            $query['WHERE'] = 'fl.ip = \''.$forum_db->escape($this->ip2hex($ip)).'\'';
             $query['LIMIT'] = '20';
         }
 
@@ -404,6 +404,7 @@ class Fancy_stop_spam {
 
         $acts = array();
         while ($cur_act = $forum_db->fetch_assoc($result)) {
+            $cur_act['ip'] = $this->hex2ip($cur_act['ip']);
             $acts[] = $cur_act;
         }
 
@@ -821,12 +822,6 @@ class Fancy_stop_spam {
     }
 
 
-    // Convert IP-address to long integer
-    private function ip2long($ip) {
-        return sprintf('%u', ip2long($ip));
-    }
-
-
     //
     private function debug_log($x, $m = null) {
         if (!defined('FANCY_STOP_SPAM_DEBUG_LOG')) {
@@ -925,5 +920,22 @@ class Fancy_stop_spam {
         }
 
         return $status;
+    }
+
+
+    // Convert IP-address to hex string
+    private function ip2hex($ip) {
+        $bin = inet_pton($ip);
+        if (false === $bin) {
+            return '-00000000';
+        }
+        // The hyphen is needed for the joint sorting ipv4 and ipv6
+        return (isset($bin[4]) ? '' : '-') . bin2hex($bin);
+    }
+
+
+    // Convert hex string to IP-address
+    private function hex2ip($hex) {
+        return inet_ntop(hex2bin(ltrim($hex, '-')));
     }
 }
