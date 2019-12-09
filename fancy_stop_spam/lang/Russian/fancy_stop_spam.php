@@ -1,6 +1,7 @@
 <?php
 
-if (!defined('FORUM')) die();
+if (!defined('FORUM'))
+	exit;
 
 $lang_fancy_stop_spam = array(
 	'Error many links' 					=> 'Слишком много ссылок в сообщении. Разрешено %s ссылок. Уменьшите количество ссылок.',
@@ -123,5 +124,3 @@ $lang_fancy_stop_spam = array(
 
 	'Identical check repeated event'		=> 'Identical repeated - user mark as suspicious',
 );
-
-?>

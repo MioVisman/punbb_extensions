@@ -1,6 +1,7 @@
 <?php
 
-if (!defined('FORUM')) die();
+if (!defined('FORUM'))
+	exit;
 
 $lang_fancy_stop_spam = array(
 	'Error many links' 					=> 'Too more links in message. Allowed %s links. Reduce number of links and post it again.',
