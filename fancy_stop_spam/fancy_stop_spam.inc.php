@@ -6,7 +6,7 @@ if (!defined('FORUM'))
 class Fancy_stop_spam
 {
     // CONFIGS
-    const NUMBER_POSTS_FOR_SIGNATURE            = 3;
+    const NUMBER_POSTS_FOR_SIGNATURE            = 5;
 
     // CONFIGS IDENTICAL
     const IDENTICAL_POST_LIFETIME               = 10800;
@@ -387,8 +387,8 @@ class Fancy_stop_spam
             'JOINS'     => array(
                 array(
                     'LEFT JOIN'     => 'users AS u',
-                    'ON'            => 'u.id=fl.user_id',
-                ),
+                    'ON'            => 'u.id=fl.user_id', // AND fl.activity_time>u.registered // Need a performance test
+                ),                                        // SQLite The new user receives data from the remote user if he was the last in the table
             ),
             'ORDER BY'  => 'fl.id DESC',
             'LIMIT'     => '100',
@@ -584,8 +584,6 @@ class Fancy_stop_spam
     {
         global $forum_db, $forum_config, $forum_page, $forum_url;
 
-        $out = '';
-
         $query = array(
             'SELECT'    => 'u.id, u.username, u.registered, u.num_posts, u.fancy_stop_spam_bot',
             'FROM'      => 'users AS u',
@@ -604,7 +602,6 @@ class Fancy_stop_spam
         } else {
             $users_data = '';
             foreach ($suspicious_users as $user) {
-                ;
                 $users_data .= '
                     <tr>
                         <td>
@@ -612,12 +609,12 @@ class Fancy_stop_spam
                                 forum_htmlencode($user['username']).'
                             </a>
                         </td>
-                        <td></td>
+                        <td>'.forum_htmlencode($user['fancy_stop_spam_bot']).'</td>
                         <td></td>
                     </tr>';
             }
 
-            $table = '<div class="ct-group">
+            $out = '<div class="ct-group">
                 <table cellpadding="0" summary="" style="table-layout: auto;">
                 <thead>
                 <tr>
@@ -629,8 +626,6 @@ class Fancy_stop_spam
                 <tbody>'.$users_data.'</tbody>
                 </table>
                 </div>';
-
-            $out = $table;
         }
 
 
@@ -713,10 +708,10 @@ class Fancy_stop_spam
     {
         $event = intval($event);
         if (!empty($this->lang['log event name ' . $event])) {
-            return forum_htmlencode($this->lang['log event name ' . $event]);
+            return $this->lang['log event name ' . $event];
         }
 
-        return forum_htmlencode($this->lang['log event name unknown']);
+        return $this->lang['log event name unknown'];
     }
 
 

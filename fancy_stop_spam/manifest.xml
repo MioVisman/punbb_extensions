@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54.4</version>
+	<version>1.3.54.6</version>
 	<description>Antispam system for PunBB 1.4.4</description>
 	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
@@ -35,7 +35,7 @@
 		forum_config_add('o_fancy_stop_spam_post_form_honeypot', '1');
 
 		forum_config_add('o_fancy_stop_spam_check_identical_posts', '0');
-		forum_config_add('o_fancy_stop_spam_check_signature', '0');
+		forum_config_add('o_fancy_stop_spam_check_signature', '1');
 		forum_config_add('o_fancy_stop_spam_check_submit', '1');
 		forum_config_add('o_fancy_stop_spam_use_logs', '1');
 		forum_config_add('o_fancy_stop_spam_sfs_api_key', '');
@@ -313,8 +313,8 @@
 
 		<!-- Save settings -->
 		<hook id="aop_features_validation"><![CDATA[
-			$form['fancy_stop_spam_max_links'] = (!isset($form['fancy_stop_spam_max_links']) ||  !is_numeric($form['fancy_stop_spam_max_links'])) ? '-1' : intval($form['fancy_stop_spam_max_links'], 10);
-			$form['fancy_stop_spam_max_guest_links'] = (!isset($form['fancy_stop_spam_max_guest_links']) ||  !is_numeric($form['fancy_stop_spam_max_guest_links'])) ? '-1' : intval($form['fancy_stop_spam_max_guest_links'], 10);
+			$form['fancy_stop_spam_max_links'] = (!isset($form['fancy_stop_spam_max_links']) ||  !is_numeric($form['fancy_stop_spam_max_links'])) ? '-1' : intval($form['fancy_stop_spam_max_links']);
+			$form['fancy_stop_spam_max_guest_links'] = (!isset($form['fancy_stop_spam_max_guest_links']) ||  !is_numeric($form['fancy_stop_spam_max_guest_links'])) ? '-1' : intval($form['fancy_stop_spam_max_guest_links']);
 
 			// Save settings
 			if (!isset($form['fancy_stop_spam_register_form_honeypot']) || $form['fancy_stop_spam_register_form_honeypot'] != '1') $form['fancy_stop_spam_register_form_honeypot'] = '0';
@@ -356,7 +356,7 @@
 		<hook id="pf_change_pass_key_form_submitted"><![CDATA[
 			// CHECK SUBMIT VALUE
 			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') {
-				if ($_POST['update'] != $lang_common['Submit'].Fancy_stop_spam::SUBMIT_MARK) {
+				if (!isset($_POST['update']) || !is_string($_POST['update']) || $_POST['update'] != $lang_common['Submit'].Fancy_stop_spam::SUBMIT_MARK) {
 					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_ACTIVATE_SUBMIT, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Activate bot message']);
@@ -365,57 +365,49 @@
 
 			// CHECK HONEY FIELDS
 			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
-				if (!isset($_POST['form_honey_key_id'])) {
+				$fancy_stop_spam_post_key_id = isset($_POST['form_honey_key_id']) && is_string($_POST['form_honey_key_id']) ? $_POST['form_honey_key_id'] : '';
+				$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.$fancy_stop_spam_post_key_id;
+				if (empty($fancy_stop_spam_post_key_id) || !isset($_POST[$fancy_stop_spam_fullkey])) {
 					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_ACTIVATE_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Activate bot message']);
-				} else {
-					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
-					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
-						$fancy_stop_spam = Fancy_stop_spam::singleton();
-						$fancy_stop_spam->log(Fancy_stop_spam::LOG_ACTIVATE_HONEYPOT, $forum_user['id'], get_remote_address());
-						message($lang_fancy_stop_spam['Activate bot message']);
-					}
+				} else if ('' != $_POST[$fancy_stop_spam_fullkey] || isset($_POST['form_fancy_stop_spam_time'])) {
+					$fancy_stop_spam = Fancy_stop_spam::singleton();
+					$fancy_stop_spam->log(Fancy_stop_spam::LOG_ACTIVATE_HONEYPOT, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Activate bot message']);
 				}
 			}
 		]]></hook>
 
 
 		<!-- -->
-		<hook id="pf_change_pass_key_pre_header_load"><![CDATA[
+		<hook id="pf_change_pass_key_pre_fieldset"><![CDATA[
 			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
 				$fancy_stop_spam_post_key_id = uniqid();
+?>
+			<div class="hidden">
+				<input type="hidden" name="form_honey_key_id" value="<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" />
+			</div>
+<?php
 			}
-		]]></hook>
-
-
-		<!-- -->
-		<hook id="pf_change_pass_key_pre_fieldset"><![CDATA[
-			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
-			?>
-				<div class="hidden">
-					<input type="hidden" name="form_honey_key_id" value="<?php echo $fancy_stop_spam_post_key_id; ?>" />
-					<input type="hidden" name="form_fancy_stop_spam_time" value="<?php echo time(); ?>" />
-				</div>
-			<?php
-			endif;
 		]]></hook>
 
 
 		<!-- -->
 		<hook id="pf_change_pass_key_pre_new_password"><![CDATA[
 			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
-			?>
+?>
 				<div class="sf-set set hidden">
 					<div class="sf-box text">
 						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" value="" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
-			<?php
+<?php
 			endif;
 		]]></hook>
+		<!-- ============== ACTIVATE ACCOUNT FORM PART END =============== -->
 
 
 
@@ -439,7 +431,7 @@
 				);
 ?>
 			<div class="hidden">
-				<input type="hidden" name="form_honey_key_id" value="<?php echo $fancy_stop_spam_post_key_id; ?>" />
+				<input type="hidden" name="form_honey_key_id" value="<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" />
 				<input type="hidden" name="form_fancy_stop_spam_time" value="<?php echo forum_htmlencode($fancy_stop_spam_time); ?>" />
 			</div>
 <?php
@@ -454,12 +446,12 @@
 					<div class="sf-box text">
 						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" value="<?php echo strrev($fancy_stop_spam_post_key_id); ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" value="<?php echo forum_htmlencode(strrev($fancy_stop_spam_post_key_id)); ?>" size="35" autocomplete="off" /></span>
 					</div>
 					<div class="sf-box text">
 						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_<?php echo $fancy_stop_spam_post_key_id; ?>" value="" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" value="" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
 <?php
@@ -500,7 +492,7 @@
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Register bot message']);
 				}
-				if ($_POST[$fancy_stop_spam_fullkey] !== strrev($fancy_stop_spam_post_key_id) || !empty($_POST[$fancy_stop_spam_fullkey2])) {
+				if ($_POST[$fancy_stop_spam_fullkey] !== strrev($fancy_stop_spam_post_key_id) || '' != $_POST[$fancy_stop_spam_fullkey2]) {
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_HONEYPOT, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Register bot message']);
 				}
@@ -526,7 +518,7 @@
 
 			// CHECK SUBMIT VALUE
 			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') {
-				if (!isset($_POST['register']) || $_POST['register'] != $lang_profile['Register'].Fancy_stop_spam::SUBMIT_MARK) {
+				if (!isset($_POST['register']) || !is_string($_POST['register']) || $_POST['register'] != $lang_profile['Register'].Fancy_stop_spam::SUBMIT_MARK) {
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_SUBMIT, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Post bot message']);
 				}
@@ -575,7 +567,7 @@
 					<div class="sf-box text">
 						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
 <?php
@@ -591,7 +583,7 @@
 					<div class="sf-box text">
 						<label><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
 <?php
