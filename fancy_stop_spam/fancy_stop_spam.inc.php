@@ -105,7 +105,7 @@ class Fancy_stop_spam
 
 
     // Log spam event to database
-    public function log($activity_type, $user_id, $user_ip, $comment = '')
+    public function log($activity_type, $user_id, $user_ip, $comment = '', $user_agent = null)
     {
         global $forum_db, $forum_config;
 
@@ -115,14 +115,17 @@ class Fancy_stop_spam
         }
 
         $comment = utf8_substr($comment, 0, 200);
+        $user_agent = utf8_substr(
+            is_string($user_agent) ? $user_agent : (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '')
+        , 0, 255);
 
         // CLEAR OLD ENTRIES
         $this->clear_old_logs();
 
         $query = array(
-            'INSERT'    => 'user_id, ip, activity_type, activity_time, comment',
+            'INSERT'    => 'user_id, ip, activity_type, activity_time, comment, user_agent',
             'INTO'      => 'fancy_stop_spam_logs',
-            'VALUES'    => intval($user_id).', \''.$forum_db->escape($this->ip2hex($user_ip)).'\', '.intval($activity_type).', '.time().', \''.$forum_db->escape($comment).'\'',
+            'VALUES'    => intval($user_id).', \''.$forum_db->escape($this->ip2hex($user_ip)).'\', '.intval($activity_type).', '.time().', \''.$forum_db->escape($comment).'\', \''.$forum_db->escape($user_agent).'\'',
         );
         $forum_db->query_build($query) or error(__FILE__, __LINE__);
     }
@@ -382,7 +385,7 @@ class Fancy_stop_spam
         $out = '';
 
         $query = array(
-            'SELECT'    => 'fl.activity_type, fl.ip, fl.activity_time, fl.user_id, fl.comment, u.username',
+            'SELECT'    => 'fl.activity_type, fl.ip, fl.user_agent, fl.activity_time, fl.user_id, fl.comment, u.username',
             'FROM'      => 'fancy_stop_spam_logs AS fl',
             'JOINS'     => array(
                 array(
@@ -394,8 +397,8 @@ class Fancy_stop_spam
             'LIMIT'     => '100',
         );
 
-        if (!is_null($user_id) && $user_id > 0) {
-            $query['WHERE'] = 'fl.user_id = \''.$forum_db->escape($user_id).'\'';
+        if (!is_null($user_id) && $user_id > 1) {
+            $query['WHERE'] = 'fl.user_id = '.intval($user_id);
         }
 
         if (!is_null($ip)) {
@@ -426,11 +429,14 @@ class Fancy_stop_spam
                             '</a>';
                     }
                 }
+                $ip_row = '<a href="'.forum_link($forum_url['get_host'], forum_htmlencode($act['ip'])).'"'.
+                    (isset($act['user_agent'][0]) ? ' title="'.forum_htmlencode($act['user_agent']).'"' : '').
+                    '>'.forum_htmlencode($act['ip']).'</a>';
 
                 $logs_data .= '
                     <tr>
                         <td>'.forum_htmlencode($this->get_log_event_name($act['activity_type'])).'</td>
-                        <td><a href="'.forum_link($forum_url['get_host'], forum_htmlencode($act['ip'])).'">'.forum_htmlencode($act['ip']).'</a></td>
+                        <td>'.$ip_row.'</td>
                         <td>'.$username_row.'</td>
                         <td>'.format_time($act['activity_time']).'</td>
                         <td>'.forum_htmlencode($act['comment']).'</td>
@@ -798,7 +804,7 @@ class Fancy_stop_spam
         global $forum_db;
 
         $query = array(
-            'SELECT'    => 'COUNT(*) AS num',
+            'SELECT'    => 'COUNT(id) AS num',
             'FROM'      => 'fancy_stop_spam_logs',
         );
         $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);

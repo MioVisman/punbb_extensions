@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54.6</version>
+	<version>1.3.54.7</version>
 	<description>Antispam system for PunBB 1.4.4</description>
 	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
@@ -86,6 +86,10 @@
 					'datatype'	=> 'VARCHAR(32)',
 					'allow_null'	=> false,
 				),
+				'user_agent' => array(
+					'datatype'		=> 'VARCHAR(255)',
+					'allow_null'	=> false,
+				),
 				'activity_type'	=>	array(
 					'datatype'	=> 'INT(10)',
 					'allow_null'	=> false,
@@ -104,7 +108,6 @@
 			'PRIMARY KEY'	=>	array('id'),
 		);
 		$forum_db->create_table('fancy_stop_spam_logs', $schema);
-
 
 		// Add cache table for StopForumSpam Emails
 		$schema = array(
@@ -147,6 +150,7 @@
 
 
 		$forum_db->add_field('users', 'fancy_stop_spam_bot', 'INT(10) UNSIGNED', false, 0);
+		$forum_db->add_field('fancy_stop_spam_logs', 'user_agent', 'VARCHAR(255)', false, '');
 	]]></install>
 
 
