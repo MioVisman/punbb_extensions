@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54.7</version>
+	<version>1.3.54.9</version>
 	<description>Antispam system for PunBB 1.4.4</description>
 	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
@@ -108,6 +108,7 @@
 			'PRIMARY KEY'	=>	array('id'),
 		);
 		$forum_db->create_table('fancy_stop_spam_logs', $schema);
+
 
 		// Add cache table for StopForumSpam Emails
 		$schema = array(
@@ -558,7 +559,7 @@
 		<hook id="po_pre_header_load,vt_quickpost_pre_display"><![CDATA[
 			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1') {
 				$fancy_stop_spam_post_key_id = uniqid();
-				$forum_page['hidden_fields']['form_honey_key_id'] = '<input type="hidden" name="form_honey_key_id" value="'.$fancy_stop_spam_post_key_id.'" />';
+				$forum_page['hidden_fields']['form_honey_key_id'] = '<input type="hidden" name="form_honey_key_id" value="'.forum_htmlencode($fancy_stop_spam_post_key_id).'" />';
 			}
 		]]></hook>
 
@@ -571,7 +572,7 @@
 					<div class="sf-box text">
 						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" value="" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
 <?php
@@ -587,7 +588,7 @@
 					<div class="sf-box text">
 						<label><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
 						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
-						<span class="fld-input"><input type="text" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" size="35" autocomplete="off" /></span>
+						<span class="fld-input"><input type="text" name="email_confirm_xxx_<?php echo forum_htmlencode($fancy_stop_spam_post_key_id); ?>" value="" size="35" autocomplete="off" /></span>
 					</div>
 				</div>
 <?php
@@ -599,27 +600,31 @@
 		<hook id="po_form_submitted"><![CDATA[
 			// CHECK HONEY FIELDS
 			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1' && !isset($_POST['preview'])) {
-				if (!isset($_POST['form_honey_key_id'])) {
+				$fancy_stop_spam_post_key_id = isset($_POST['form_honey_key_id']) && is_string($_POST['form_honey_key_id']) ? $_POST['form_honey_key_id'] : '';
+				$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.$fancy_stop_spam_post_key_id;
+				if (empty($fancy_stop_spam_post_key_id) || !isset($_POST[$fancy_stop_spam_fullkey])) {
 					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_POST_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
-					message($lang_fancy_stop_spam['Post bot message']);
-				} else {
-					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
-					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
-						$fancy_stop_spam = Fancy_stop_spam::singleton();
-						$fancy_stop_spam->log(Fancy_stop_spam::LOG_POST_HONEYPOT, $forum_user['id'], get_remote_address());
-						$errors[] = $lang_fancy_stop_spam['Post bot message'];
-					}
+					$errors[] = $lang_fancy_stop_spam['Post bot message'];
+				} else if ('' != $_POST[$fancy_stop_spam_fullkey]) {
+					$fancy_stop_spam = Fancy_stop_spam::singleton();
+					$fancy_stop_spam->log(Fancy_stop_spam::LOG_POST_HONEYPOT, $forum_user['id'], get_remote_address());
+					$errors[] = $lang_fancy_stop_spam['Post bot message'];
 				}
 			}
 
 			// CHECK SUBMIT VALUE
-			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1' && !isset($_POST['preview']) && $forum_user['is_guest']) {
-				if (($_POST['submit'] != $lang_post['Submit reply'].Fancy_stop_spam::SUBMIT_MARK) ||
-					($_POST['submit'] != $lang_post['Submit topic'].Fancy_stop_spam::SUBMIT_MARK)) {
+			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1' && !isset($_POST['preview'])) {
+				if (!isset($_POST['submit_button'])
+					|| !is_string($_POST['submit_button'])
+					|| !($_POST['submit_button'] == $lang_post['Submit reply'].Fancy_stop_spam::SUBMIT_MARK
+						|| $_POST['submit_button'] == $lang_post['Submit topic'].Fancy_stop_spam::SUBMIT_MARK
+						|| $_POST['submit_button'] == $lang_common['Submit'].Fancy_stop_spam::SUBMIT_MARK
+					)
+				) {
 					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_POST_SUBMIT, $forum_user['id'], get_remote_address());
-					message($lang_fancy_stop_spam['Post bot message']);
+					$errors[] = $lang_fancy_stop_spam['Post bot message'];
 				}
 			}
 		]]></hook>
@@ -662,7 +667,7 @@
 				}
 			}
 		]]></hook>
-		<!-- ============== POST SIGNATURE PART END =============== -->
+		<!-- ============== CHECK SIGNATURE PART END =============== -->
 
 
 		<!-- ============== CHECK IDENTICAL PART =============== -->
