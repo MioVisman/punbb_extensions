@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54.9</version>
+	<version>1.3.54.10</version>
 	<description>Antispam system for PunBB 1.4.4</description>
 	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
@@ -196,8 +196,9 @@
 
 			// Load LANG
 			if (!isset($lang_fancy_stop_spam)) {
-				if ($forum_user['language'] != 'English' &&
-				file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+				if ($forum_user['language'] != 'English'
+					&& file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')
+				) {
 					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 				} else {
 					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
@@ -633,38 +634,35 @@
 
 		<!-- ============== CHECK SIGNATURE PART =============== -->
 		<hook id="pf_change_details_modify_main_menu"><![CDATA[
-			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1' && $forum_config['o_signatures'] == '1') {
-				if ($forum_user['num_posts'] < Fancy_stop_spam::NUMBER_POSTS_FOR_SIGNATURE) {
-					// HIDE SIGNATURE LINK
-					if (isset($forum_page['main_menu']['signature'])) {
-						$forum_page['main_menu']['signature'] = '<li'.(($section == 'signature') ? ' class="active hidden"' : '').' style="display: none;"><a href="'.forum_link($forum_url['profile_signature'], $id).'"><span>'.$lang_profile['Section signature'].'</span></a></li>';
-					}
-				}
+			// HIDE SIGNATURE LINK
+			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1'
+				&& isset($forum_page['main_menu']['signature'])
+				&& $forum_user['num_posts'] < Fancy_stop_spam::NUMBER_POSTS_FOR_SIGNATURE
+			) {
+				$forum_page['main_menu']['signature'] = '<li'.(($section == 'signature') ? ' class="active hidden"' : '').' style="display: none;"><a href="'.forum_link($forum_url['profile_signature'], $id).'"><span>'.$lang_profile['Section signature'].'</span></a></li>';
 			}
 
 			// ADD Antispam section to user profile
-			if ($forum_user['g_id'] == FORUM_ADMIN) {
-				if (isset($forum_page['main_menu']['admin'])) {
-					array_insert($forum_page['main_menu'],
-						'admin',
-						'<li'.(($section == 'fancy_stop_spam_profile_section') ?
-						' class="active"'
-						: '').'><a href="'.forum_link($forum_url['fancy_stop_spam_profile_section'], $id).'">
-						<span>'.$lang_fancy_stop_spam['Section antispam'].'</span>
-					</a></li>', 'fancy_stop_spam_profile_section');
-				}
+			if ($forum_user['g_id'] == FORUM_ADMIN && isset($forum_page['main_menu']['admin'])) {
+				array_insert($forum_page['main_menu'],
+					'admin',
+					'<li'.(($section == 'fancy_stop_spam_profile_section') ?
+					' class="active"'
+					: '').'><a href="'.forum_link($forum_url['fancy_stop_spam_profile_section'], $id).'">
+					<span>'.$lang_fancy_stop_spam['Section antispam'].'</span>
+				</a></li>', 'fancy_stop_spam_profile_section');
 			}
 		]]></hook>
 
 
 		<!-- Check submited signature -->
 		<hook id="pf_change_details_signature_validation"><![CDATA[
-			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1') {
-				if ($forum_user['num_posts'] < Fancy_stop_spam::NUMBER_POSTS_FOR_SIGNATURE) {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
-					$fancy_stop_spam->log(Fancy_stop_spam::LOG_SIGNATURE_HIDDEN, $forum_user['id'], get_remote_address());
-					$fancy_stop_spam->mark_user_as_spammer($forum_user['id']);
-				}
+			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1'
+				&& $forum_user['num_posts'] < Fancy_stop_spam::NUMBER_POSTS_FOR_SIGNATURE
+			) {
+				$fancy_stop_spam = Fancy_stop_spam::singleton();
+				$fancy_stop_spam->log(Fancy_stop_spam::LOG_SIGNATURE_HIDDEN, $forum_user['id'], get_remote_address());
+				$fancy_stop_spam->mark_user_as_spammer($forum_user['id']);
 			}
 		]]></hook>
 		<!-- ============== CHECK SIGNATURE PART END =============== -->
@@ -749,14 +747,14 @@
 				</div>
 				<div class="main-content main-frm">
 					<div class="ct-group">
-						<?php
-							$fancy_stop_spam = Fancy_stop_spam::singleton();
-							$fancy_stop_spam->print_user_status($user);
-						?>
+<?php
+				$fancy_stop_spam = Fancy_stop_spam::singleton();
+				$fancy_stop_spam->print_user_status($user);
+?>
 					</div>
-					<?php
-				        echo $fancy_stop_spam->print_logs($user['id']);
-					?>
+<?php
+				echo $fancy_stop_spam->print_logs($user['id']);
+?>
 				</div>
 <?php
 				$tpl_temp = forum_trim(ob_get_contents());
@@ -830,11 +828,12 @@
 
 		<!--  -->
 		<hook id="pf_delete_user_pre_redirect"><![CDATA[
-			if (isset($_POST['fancy_stop_spam_report_to_sfs']) && $forum_config['o_regs_verify'] == '1') {
-				if (!empty($forum_config['o_fancy_stop_spam_sfs_api_key'])) {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
-					$fancy_stop_spam->send_spam_data_to_sfs($user['username'], $user['email'], $user['registration_ip']);
-				}
+			if (isset($_POST['fancy_stop_spam_report_to_sfs'])
+				&& $forum_config['o_regs_verify'] == '1'
+				&& !empty($forum_config['o_fancy_stop_spam_sfs_api_key'])
+			) {
+				$fancy_stop_spam = Fancy_stop_spam::singleton();
+				$fancy_stop_spam->send_spam_data_to_sfs($user['username'], $user['email'], $user['registration_ip']);
 			}
 		]]></hook>
 	</hooks>

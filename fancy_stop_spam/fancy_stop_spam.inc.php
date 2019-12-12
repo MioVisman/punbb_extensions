@@ -28,6 +28,7 @@ class Fancy_stop_spam
     const SUBMIT_MARK                           = ' ';
 
     const NUMBER_LOGS_FOR_SAVE                  = 5000;
+    const TIMEOUT_FOR_CLEARING_LOGS             = 86400;
 
     const LOG_SYSTEM_EVENT                  = 0;
 
@@ -70,6 +71,7 @@ class Fancy_stop_spam
     const STATUS_NOT_SPAM                   = 'not_spam';
     const STATUS_SPAM                       = 'spam';
     const STATUS_MAYBE_SPAM                 = 'maybe_spam';
+    const STATUS_SFS_NO_CONNECT             = 'unknown';
 
 
     private static $instance;
@@ -415,7 +417,7 @@ class Fancy_stop_spam
         }
 
         if (empty($acts)) {
-            $out = '<div class="ct-box info-box"><p>'.$this->lang['No activity'].'</p></div>';
+            $out = '<div class="ct-box info-box"><p>'.$this->lang['No activity'].'</p></div>'."\n";
         } else {
             $logs_data = '';
             foreach ($acts as $act) {
@@ -443,7 +445,7 @@ class Fancy_stop_spam
                     </tr>';
             }
 
-            $table = '<div class="ct-group">
+            $out = '<div class="ct-group">
                 <table cellpadding="0" summary="" style="table-layout: auto;">
                 <thead>
                 <tr>
@@ -456,9 +458,7 @@ class Fancy_stop_spam
                 </thead>
                 <tbody>'.$logs_data.'</tbody>
                 </table>
-                </div>';
-
-            $out = $table;
+                </div>'."\n";
         }
 
         return $out;
@@ -521,9 +521,6 @@ class Fancy_stop_spam
 
             $fancy_stop_spam_email_data = $this->make_request_to_sfs($sfs_request_email_data);
             $fancy_stop_spam_ip_data = $this->make_request_to_sfs($sfs_request_ip_data);
-            if ($fancy_stop_spam_email_data === false || $fancy_stop_spam_ip_data === false) {
-                message("Can not get info from Stop Forum Spam server. Try again later.");
-            }
 
             $users_data = '';
             foreach ($founded_user_datas as $founded_user) {
@@ -538,8 +535,18 @@ class Fancy_stop_spam
                     }
                 }
 
-                $email_status = $this->get_sfs_status_for_email($founded_user["email"], $fancy_stop_spam_email_data, $spam_status_email);
-                $ip_status = $this->get_sfs_status_for_ip($founded_user["registration_ip"], $fancy_stop_spam_ip_data, $spam_status_ip);
+                if ($fancy_stop_spam_email_data === false) {
+                    $email_status = 'no connection to SFS';
+                    $spam_status_email = self::STATUS_SFS_NO_CONNECT;
+                } else {
+                    $email_status = $this->get_sfs_status_for_email($founded_user["email"], $fancy_stop_spam_email_data, $spam_status_email);
+                }
+                if ($fancy_stop_spam_ip_data === false) {
+                    $ip_status = 'no connection to SFS';
+                    $spam_status_ip = self::STATUS_SFS_NO_CONNECT;
+                } else {
+                    $ip_status = $this->get_sfs_status_for_ip($founded_user["registration_ip"], $fancy_stop_spam_ip_data, $spam_status_ip);
+                }
 
                 // NUMBER of POSTS
                 $num_posts_row = '0';
@@ -604,7 +611,7 @@ class Fancy_stop_spam
         }
 
         if (empty($suspicious_users)) {
-            $out = '<div class="ct-box info-box"><p>'.$this->lang['No suspicious_users'].'</p></div>';
+            $out = '<div class="ct-box info-box"><p>'.$this->lang['No suspicious_users'].'</p></div>'."\n";
         } else {
             $users_data = '';
             foreach ($suspicious_users as $user) {
@@ -631,7 +638,7 @@ class Fancy_stop_spam
                 </thead>
                 <tbody>'.$users_data.'</tbody>
                 </table>
-                </div>';
+                </div>'."\n";
         }
 
 
@@ -650,7 +657,8 @@ class Fancy_stop_spam
         ));
 
         if ($fancy_stop_spam_data === false) {
-            message("Can not get info from Stop Forum Spam server. Try again later.");
+            echo '<div class="ct-box info-box"><p>Can not get info from Stop Forum Spam server. Try again later.</p></div>'."\n";
+            return;
         }
 
         // Email block
@@ -692,7 +700,7 @@ class Fancy_stop_spam
             $fancy_stop_spam_ip_info[] = '<li>'.$this->lang['Status error'].'</li>';
         }
 
-        ?>
+?>
             <div class="ct-set data-set set<?php echo ++$forum_page['item_count'] ?>">
                 <div class="ct-box data-box">
                     <h4 class="ct-legend hn"><span><?php echo $lang_profile['E-mail'] ?></span></h4>
@@ -705,7 +713,8 @@ class Fancy_stop_spam
                     <ul class="data-box"><?php echo implode('', $fancy_stop_spam_ip_info); ?></ul>
                 </div>
             </div>
-        <?php
+<?php
+
     }
 
 
@@ -782,6 +791,10 @@ class Fancy_stop_spam
     private function clear_old_logs()
     {
         global $forum_db;
+
+        if (true !== $this->need_clear_logs()) {
+            return;
+        }
 
         if ($this->get_num_logs() > (self::NUMBER_LOGS_FOR_SAVE + 100)) {
             $max_old_id = $this->get_last_old_id_logs();
@@ -963,5 +976,28 @@ class Fancy_stop_spam
     private function hex2ip($hex)
     {
         return inet_ntop(hex2bin(ltrim($hex, '-')));
+    }
+
+
+    function need_clear_logs()
+    {
+        $cache_name = FORUM_CACHE_DIR.'cache_fss_logs_time.php';
+
+        if (file_exists($cache_name)) {
+            $time = include $cache_name;
+            if ($time > 0 && time() - intval($time) < self::TIMEOUT_FOR_CLEARING_LOGS) {
+                return false;
+            }
+        }
+
+        if (!defined('FORUM_CACHE_FUNCTIONS_LOADED')) {
+            require FORUM_ROOT.'include/cache.php';
+        }
+
+        if (!write_cache_file($cache_name, '<?php'."\n\n".'return '.time().';'."\n")) {
+            error('Unable to write fss_logs_time file to cache directory.<br />Please make sure PHP has write access to the directory \'cache\'.', __FILE__, __LINE__);
+        }
+
+        return true;
     }
 }
