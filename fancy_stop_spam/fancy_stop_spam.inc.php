@@ -536,13 +536,13 @@ class Fancy_stop_spam
                 }
 
                 if ($fancy_stop_spam_email_data === false) {
-                    $email_status = 'no connection to SFS';
+                    $email_status = $this->lang['Status error'];
                     $spam_status_email = self::STATUS_SFS_NO_CONNECT;
                 } else {
                     $email_status = $this->get_sfs_status_for_email($founded_user["email"], $fancy_stop_spam_email_data, $spam_status_email);
                 }
                 if ($fancy_stop_spam_ip_data === false) {
-                    $ip_status = 'no connection to SFS';
+                    $ip_status = $this->lang['Status error'];
                     $spam_status_ip = self::STATUS_SFS_NO_CONNECT;
                 } else {
                     $ip_status = $this->get_sfs_status_for_ip($founded_user["registration_ip"], $fancy_stop_spam_ip_data, $spam_status_ip);
@@ -657,7 +657,7 @@ class Fancy_stop_spam
         ));
 
         if ($fancy_stop_spam_data === false) {
-            echo '<div class="ct-box info-box"><p>Can not get info from Stop Forum Spam server. Try again later.</p></div>'."\n";
+            echo '<div class="ct-box info-box"><p>'.$this->lang['Status error'].'</p></div>'."\n";
             return;
         }
 
