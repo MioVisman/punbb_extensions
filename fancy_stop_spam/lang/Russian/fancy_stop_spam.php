@@ -22,6 +22,7 @@ $lang_fancy_stop_spam = array(
 	'First Post Methods'			=> 'Метод Первого сообщения',
 	'Signature Check Method'		=> 'Метод Подписи',
 	'Submit Check Method'			=> 'Метод Сабмита',
+	'For guests'					=> ' (для гостей)',
 
 	'Enable Honeypot'				=> 'Включить защиту скрытыми полями',
 	'Enable Timeout'				=> 'Включить зашиту таймаутами',
@@ -29,17 +30,20 @@ $lang_fancy_stop_spam = array(
 	'Enable Check Identical'		=> 'Проверять одинаковые сообщения',
 
 	'Enable SFS Email'				=> 'Проверять эл. почту через StopForumSpam',
-	'Enable SFS IP'					=> 'Проверять айпи-адрес через StopForumSpam',
+	'Enable SFS IP'					=> 'Проверять IP-адрес через StopForumSpam',
 
 	'Register bot message'			=> 'Извините, мы думаем что вы бот. Вы не можете сейчас зарегистрироваться.',
 	'Register bot timeout message'	=> 'Извините, мы думаем что вы бот, потому что вы заполнили форму слишком быстро. Подождите несколько секунд и заполните форму снова.',
 	'Register bot timezone message'	=> 'Извините, мы думаем что вы бот, потому что вы выбрали временную зону UTC−12:00. В этой зоне нет людей. Выберите любую другую зону.',
 	'Register bot sfs email message'	=> 'Извините, мы думаем что вы бот. Ваш адрес электронной почты найден в базе спамеров StopForumSpam. Вы не можете сейчас зарегистрироваться.',
 	'Register bot sfs email ip message'	=> 'В течении последнего часа с вашего IP-адреса была попытка регистрации спамера. По прошествии 60 минут вы сможете зарегистрироваться, это мера безопасности. Приносим извинения за неудобства.',
-	'Register bot sfs ip message'	=> 'Извините, мы думаем что вы бот. Ваш айпи-адрес найден в базе спамеров StopForumSpam. Вы не можете сейчас зарегистрироваться.',
+	'Register bot sfs ip message'	=> 'Извините, мы думаем что вы бот. Ваш IP-адрес найден в базе спамеров StopForumSpam. Вы не можете сейчас зарегистрироваться.',
 	'Login bot message'				=> 'Извините, мы думаем что вы бот. Вы не можете сейчас войти на форум.',
 	'Post bot message'				=> 'Извините, мы думаем что вы бот. Вы не можете сейчас отправить сообщение.',
 	'Post Identical message'		=> 'Извините, но вы отправляете одинаковые сообщения. Измените сообщение и отправьте его снова.',
+	'Post bot sfs email message'	=> 'Извините, мы думаем что вы бот. Ваш адрес электронной почты найден в базе спамеров StopForumSpam.',
+	'Post bot sfs email ip message'	=> 'В течении последнего часа с вашего IP-адреса была попытка регистрации спамера. Вы можете повторить попытку опубликовать сообщение через 60 минут. Приносим извинения за неудобства.',
+	'Post bot sfs ip message'		=> 'Извините, мы думаем что вы бот. Ваш IP-адрес найден в базе спамеров StopForumSpam.',
 	'Activate bot message'			=> 'Извините, мы думаем что вы бот. Вы не можите активировать учётную запись.',
 
 	'Honey field'					=> 'Анти СПАМ',
@@ -97,6 +101,11 @@ $lang_fancy_stop_spam = array(
 	'log event name 21'						=> 'Post timeout',
 	'log event name 22'						=> 'Post honeypot',
 	'log event name 23'						=> 'Post honeypot empty',
+	'log event name 24'						=> 'Post email SFS',
+	'log event name 25'						=> 'Post email SFS (cached)',
+	'log event name 26'						=> 'Post email SFS IP (cached)',
+	'log event name 27'						=> 'Post IP SFS',
+	'log event name 28'						=> 'Post IP SFS (cached)',
 
 	'log event name 30'						=> 'Identical message post',
 

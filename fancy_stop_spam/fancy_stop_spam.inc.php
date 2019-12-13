@@ -51,6 +51,11 @@ class Fancy_stop_spam
     const LOG_POST_TIMEOUT                  = 21;
     const LOG_POST_HONEYPOT                 = 22;
     const LOG_POST_HONEYPOT_EMPTY           = 23;
+    const LOG_POST_EMAIL_SFS                = 24;
+    const LOG_POST_EMAIL_SFS_CACHED         = 25;
+    const LOG_POST_EMAIL_SFS_IP_CACHED      = 26;
+    const LOG_POST_IP_SFS                   = 27;
+    const LOG_POST_IP_SFS_CACHED            = 28;
 
     // LOGS EVENTS LOGIN
     const LOG_LOGIN_HONEYPOT                = 40;
@@ -239,13 +244,29 @@ class Fancy_stop_spam
 
 
     //
-    public function check_by_sfs(&$errors, $data = array())
+    public function check_by_sfs(&$errors, $data = array(), $reg_form = true)
     {
         global $forum_db, $forum_user, $forum_config;
 
-        $need_check_email = ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1' && !empty($data['email']));
-        $need_check_ip = ($forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1' && !empty($data['ip']));
+        $need_check_email = !empty($data['email']);
+        $need_check_ip = !empty($data['ip']);
         $spam_data = null;
+
+        if (true === $reg_form) {
+            $prefix = 'Register ';
+            $con_ipcached = self::LOG_REGISTER_IP_SFS_CACHED;
+            $con_ip = self::LOG_REGISTER_IP_SFS;
+            $con_ecached = self::LOG_REGISTER_EMAIL_SFS_CACHED;
+            $con_eipcached = self::LOG_REGISTER_EMAIL_SFS_IP_CACHED;
+            $con_e = self::LOG_REGISTER_EMAIL_SFS;
+        } else {
+            $prefix = 'Post ';
+            $con_ipcached = self::LOG_POST_IP_SFS_CACHED;
+            $con_ip = self::LOG_POST_IP_SFS;
+            $con_ecached = self::LOG_POST_EMAIL_SFS_CACHED;
+            $con_eipcached = self::LOG_POST_EMAIL_SFS_IP_CACHED;
+            $con_e = self::LOG_POST_EMAIL_SFS;
+        }
 
         // IP CHECKS
         if ($need_check_ip) {
@@ -263,8 +284,9 @@ class Fancy_stop_spam
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
-                $this->log(self::LOG_REGISTER_IP_SFS_CACHED, $forum_user['id'], $data['ip']);
-                message($this->lang['Register bot sfs email message']);
+                $this->log($con_ipcached, $forum_user['id'], $data['ip']);
+                $errors[] = $this->lang[$prefix.'bot sfs ip message'];
+                return;
             }
 
             if (is_null($spam_data)) {
@@ -296,8 +318,10 @@ class Fancy_stop_spam
                         'VALUES'    => '\''.$forum_db->escape($this->ip2hex($data['ip'])).'\', '.time(),
                     );
                     $forum_db->query_build($query) or error(__FILE__, __LINE__);
-                    $this->log(self::LOG_REGISTER_IP_SFS, $forum_user['id'], $data['ip']);
-                    message($this->lang['Register bot sfs ip message']);
+
+                    $this->log($con_ip, $forum_user['id'], $data['ip']);
+                    $errors[] = $this->lang[$prefix.'bot sfs ip message'];
+                    return;
                 }
             }
         }
@@ -319,8 +343,9 @@ class Fancy_stop_spam
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
-                $this->log(self::LOG_REGISTER_EMAIL_SFS_CACHED, $forum_user['id'], get_remote_address(), $data['email']);
-                message($this->lang['Register bot sfs email message']);
+                $this->log($con_ecached, $forum_user['id'], get_remote_address(), $data['email']);
+                $errors[] = $this->lang[$prefix.'bot sfs email message'];
+                return;
             }
 
             // Check ip in email cache
@@ -332,8 +357,8 @@ class Fancy_stop_spam
                 );
                 $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
                 if ($forum_db->result($result) > 0) {
-                    $this->log(self::LOG_REGISTER_EMAIL_SFS_IP_CACHED, $forum_user['id'], get_remote_address());
-                    $errors[] = $this->lang['Register bot sfs email ip message'];
+                    $this->log($con_eipcached, $forum_user['id'], get_remote_address());
+                    $errors[] = $this->lang[$prefix.'bot sfs email ip message'];
                     return;
                 }
             }
@@ -342,10 +367,9 @@ class Fancy_stop_spam
             if (is_null($spam_data)) {
                 $spam_data = $this->make_request_to_sfs($data);
             }
+
             if ($spam_data !== false && isset($spam_data['email']) && is_array($spam_data['email'])) {
                 if (!empty($spam_data['email']['appears'])) {
-                    $this->log(self::LOG_REGISTER_EMAIL_SFS, $forum_user['id'], get_remote_address(), $data['email']);
-
                     // Add to cache
                     $query = array(
                         'INSERT'    => 'email, added, ip',
@@ -353,7 +377,10 @@ class Fancy_stop_spam
                         'VALUES'    => '\''.$forum_db->escape($data['email']).'\', '.time().', \''.$forum_db->escape($this->ip2hex(get_remote_address())).'\'',
                     );
                     $forum_db->query_build($query) or error(__FILE__, __LINE__);
-                    message($this->lang['Register bot sfs email message']);
+
+                    $this->log($con_e, $forum_user['id'], get_remote_address(), $data['email']);
+                    $errors[] = $this->lang[$prefix.'bot sfs email message'];
+                    return;
                 }
             }
         }

@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.54.11</version>
+	<version>1.3.54.12</version>
 	<description>Antispam system for PunBB 1.4.4</description>
 	<author>dimka.linux@gmail.com (Modified by Visman - mio.visman@yandex.ru)</author>
 
@@ -33,6 +33,8 @@
 		forum_config_add('o_fancy_stop_spam_register_form_sfs_ip', '1');
 
 		forum_config_add('o_fancy_stop_spam_post_form_honeypot', '1');
+		forum_config_add('o_fancy_stop_spam_post_form_sfs_email', '1');
+		forum_config_add('o_fancy_stop_spam_post_form_sfs_ip', '1');
 
 		forum_config_add('o_fancy_stop_spam_check_identical_posts', '0');
 		forum_config_add('o_fancy_stop_spam_check_signature', '1');
@@ -173,6 +175,8 @@
 			'o_fancy_stop_spam_register_form_sfs_ip',
 			'o_fancy_stop_spam_sfs_api_key',
 			'o_fancy_stop_spam_register_key',
+			'o_fancy_stop_spam_post_form_sfs_email',
+			'o_fancy_stop_spam_post_form_sfs_ip',
 		));
 
 		$forum_db->drop_table('fancy_stop_spam_identical_posts');
@@ -262,6 +266,14 @@
 								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_post_form_honeypot]" value="1"<?php if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1') echo ' checked="checked"'; ?> /></span>
 								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Honeypot'] ?></label>
 							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_post_form_sfs_email]" value="1"<?php if ($forum_config['o_fancy_stop_spam_post_form_sfs_email'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable SFS Email'].$lang_fancy_stop_spam['For guests'] ?></label>
+							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_post_form_sfs_ip]" value="1"<?php if ($forum_config['o_fancy_stop_spam_post_form_sfs_ip'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable SFS IP'].$lang_fancy_stop_spam['For guests'] ?></label>
+							</div>
 						</div>
 					</fieldset>
 
@@ -330,6 +342,9 @@
 			if (!isset($form['fancy_stop_spam_register_form_sfs_ip']) || $form['fancy_stop_spam_register_form_sfs_ip'] != '1') $form['fancy_stop_spam_register_form_sfs_ip'] = '0';
 
 			if (!isset($form['fancy_stop_spam_post_form_honeypot']) || $form['fancy_stop_spam_post_form_honeypot'] != '1') $form['fancy_stop_spam_post_form_honeypot'] = '0';
+			if (!isset($form['fancy_stop_spam_post_form_sfs_email']) || $form['fancy_stop_spam_post_form_sfs_email'] != '1') $form['fancy_stop_spam_post_form_sfs_email'] = '0';
+			if (!isset($form['fancy_stop_spam_post_form_sfs_ip']) || $form['fancy_stop_spam_post_form_sfs_ip'] != '1') $form['fancy_stop_spam_post_form_sfs_ip'] = '0';
+
 			if (!isset($form['fancy_stop_spam_check_identical_posts']) || $form['fancy_stop_spam_check_identical_posts'] != '1') $form['fancy_stop_spam_check_identical_posts'] = '0';
 			if (!isset($form['fancy_stop_spam_check_signature']) || $form['fancy_stop_spam_check_signature'] != '1') $form['fancy_stop_spam_check_signature'] = '0';
 			if (!isset($form['fancy_stop_spam_check_submit']) || $form['fancy_stop_spam_check_submit'] != '1') $form['fancy_stop_spam_check_submit'] = '0';
@@ -533,9 +548,16 @@
 
 		<hook id="rg_register_end_validation"><![CDATA[
 			if (empty($errors)) {
-				if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1' || $forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1') {
-			 		$fancy_stop_spam = Fancy_stop_spam::singleton();
-    				$fancy_stop_spam->check_by_sfs($errors, array('email' => $email1, 'ip'	=> get_remote_address()));
+				$fancy_stop_spam_array = array();
+				if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1') {
+					$fancy_stop_spam_array['email'] = $email1;
+				}
+				if ($forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1') {
+					$fancy_stop_spam_array['ip'] = get_remote_address();
+				}
+				if (!empty($fancy_stop_spam_array)) {
+					$fancy_stop_spam = Fancy_stop_spam::singleton();
+					$fancy_stop_spam->check_by_sfs($errors, $fancy_stop_spam_array);
 				}
 			}
 		]]></hook>
@@ -702,6 +724,20 @@
 
 			if ($check_max_links_result !== true) {
 				$errors[] = $check_max_links_result;
+			}
+
+			if ($forum_user['is_guest'] && empty($errors) && !isset($_POST['preview'])) {
+				$fancy_stop_spam_array = array();
+				if ($forum_config['o_fancy_stop_spam_post_form_sfs_email'] == '1' && $email != '') {
+					$fancy_stop_spam_array['email'] = $email;
+				}
+				if ($forum_config['o_fancy_stop_spam_post_form_sfs_ip'] == '1') {
+					$fancy_stop_spam_array['ip'] = get_remote_address();
+				}
+				if (!empty($fancy_stop_spam_array)) {
+					$fancy_stop_spam = Fancy_stop_spam::singleton();
+					$fancy_stop_spam->check_by_sfs($errors, $fancy_stop_spam_array, false);
+				}
 			}
 		]]></hook>
 

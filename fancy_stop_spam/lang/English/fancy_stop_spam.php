@@ -22,6 +22,7 @@ $lang_fancy_stop_spam = array(
 	'First Post Methods'			=> 'First Post methods',
 	'Signature Check Method'		=> 'Check signature time',
 	'Submit Check Method'			=> 'Check submit value',
+	'For guests'					=> ' (for guests)',
 
 	'Enable Honeypot'				=> 'Enable honeypot protection',
 	'Enable Timeout'				=> 'Enable timeout protection',
@@ -40,6 +41,9 @@ $lang_fancy_stop_spam = array(
 	'Login bot message'				=> 'Sorry, but we think you are bot. You can not login on this forum.',
 	'Post bot message'				=> 'Sorry, but we think you are bot. You can not post message on this forum.',
 	'Post Identical message'		=> 'Sorry, but you can not post identical messages. Modify message and post it again.',
+	'Post bot sfs email message'	=> 'Sorry, but your email identified as spam.',
+	'Post bot sfs email ip message'	=> 'A spammer was try registered with the same IP address as you within the last hour. You can retry posting after 60 minutes. Sorry for the inconvenience.',
+	'Post bot sfs ip message'		=> 'Sorry, but your ip-address identified as spammers.',
 	'Activate bot message'			=> 'Sorry, but we think you are bot. You can not activate account on this forum.',
 
 	'Honey field'					=> 'Anti SPAM',
@@ -97,6 +101,11 @@ $lang_fancy_stop_spam = array(
 	'log event name 21'						=> 'Post timeout',
 	'log event name 22'						=> 'Post honeypot',
 	'log event name 23'						=> 'Post honeypot empty',
+	'log event name 24'						=> 'Post email SFS',
+	'log event name 25'						=> 'Post email SFS (cached)',
+	'log event name 26'						=> 'Post email SFS IP (cached)',
+	'log event name 27'						=> 'Post IP SFS',
+	'log event name 28'						=> 'Post IP SFS (cached)',
 
 	'log event name 30'						=> 'Identical message post',
 
