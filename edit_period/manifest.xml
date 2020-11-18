@@ -13,17 +13,17 @@
 
 <extension engine="1.0">
 	<id>edit_period</id>
-	<title>Allow users to edit their post within specified period.</title>
-	<version>1.0</version>
+	<title>Post editing period</title>
+	<version>1.0.0.1</version>
 	<description>You can mention number of minutes a post can be edited after its creation. After that time, normal users will be unable to edit while moderators or admins will be able.</description>
 	<author>The HungryCoder</author>
 
-	<minversion>1.3.2</minversion>
-	<maxtestedon>1.3.2</maxtestedon>
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
 
-	
+
 	<install>
-	<![CDATA[		
+	<![CDATA[
 	$query = array(
 		'INSERT'	=> 'conf_name, conf_value',
 		'INTO'		=> 'config',
@@ -43,21 +43,19 @@
 
 	]]>
 	</uninstall>
-	
+
 	<hooks>
 		<hook id="aop_features_validation"><![CDATA[
-			
 			$form['pun_post_edit_period'] = !empty($form['edit_post_period']) ? intval($form['edit_post_period']) : 60;
-			
 		]]></hook>
-		
+
 		<hook id="aop_features_avatars_fieldset_end"><![CDATA[
 			if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
 				include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
 			else
 				include $ext_info['path'].'/lang/English.php';
 				?>
-			<div class="content-head">
+			<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
 				<h2 class="hn">
 					<span><?php echo $lang_edit_period['Edit period']; ?></span>
 				</h2>
@@ -76,29 +74,55 @@
 				</div>
 			</fieldset>
 			<?php
-			
+
 		]]></hook>
+
+		<hook id="ed_qr_get_post_info"><![CDATA[
+			$query['SELECT'] .= ', p.posted AS cur_post_posted';
+		]]></hook>
+
 		<hook id="ed_post_selected"><![CDATA[
-		
-			if(!$forum_page['is_admmod']){
+			if (
+				! $forum_page['is_admmod']
+				&& strtotime('-' . (int) $forum_config['o_pun_post_edit_period'] . ' minutes') > $cur_post['cur_post_posted']
+			) {
 				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
 					include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
 				else
 					include $ext_info['path'].'/lang/English.php';
-				
-					$pepconf=$forum_config['o_pun_post_edit_period'];
-					if(strtotime("-$pepconf minutes") > $cur_post['posted'])
-						message($lang_edit_period['No edit']);
+
+				message($lang_edit_period['No edit']);
 			}
-		]]></hook>		
+		]]></hook>
+
 		<hook id="vt_row_pre_post_actions_merge"><![CDATA[
-		if(!$forum_page['is_admmod']){
-			$pepconf=$forum_config['o_pun_post_edit_period'];
-			if(strtotime("-$pepconf minutes") > $cur_post['posted'])
-				unset($forum_page['post_actions']['edit']);
+		if (
+			! $forum_page['is_admmod']
+			&& $cur_post['poster_id'] == $forum_user['id']
+			&& strtotime('-' . (int) $forum_config['o_pun_post_edit_period'] . ' minutes') > $cur_post['posted']
+		){
+			unset($forum_page['post_actions']['edit']);
 		}
 		]]></hook>
 
+		<!-- Add link to settings in extension page -->
+		<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+			if ($ext['id'] == 'edit_period' && !isset($forum_page['ext_actions']['edit_period_settings'])) {
+				if (empty($lang_edit_period)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+						include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+					else
+						include $ext_info['path'].'/lang/English.php';
+				}
+
+				$forum_page['ext_actions']['edit_period_settings'] = '
+					<span>
+						<a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.
+							$lang_edit_period['Go to settings'].'
+						</a>
+					</span>';
+			}
+		]]></hook>
 
 	</hooks>
 
