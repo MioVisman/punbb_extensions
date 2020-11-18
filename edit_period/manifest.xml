@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * PunBB Bangla Input System main file
+ *
+ * @copyright Copyright (C) 2009  The Hungrycoder
+ * @license http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ * @package pun_bangla_input
+ */
+-->
+
+<extension engine="1.0">
+	<id>edit_period</id>
+	<title>Allow users to edit their post within specified period.</title>
+	<version>1.0</version>
+	<description>You can mention number of minutes a post can be edited after its creation. After that time, normal users will be unable to edit while moderators or admins will be able.</description>
+	<author>The HungryCoder</author>
+
+	<minversion>1.3.2</minversion>
+	<maxtestedon>1.3.2</maxtestedon>
+
+	
+	<install>
+	<![CDATA[		
+	$query = array(
+		'INSERT'	=> 'conf_name, conf_value',
+		'INTO'		=> 'config',
+		'VALUES'	=> '\'o_pun_post_edit_period\', \'60\''
+	);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+	]]></install>
+
+	<uninstall>
+	<![CDATA[
+		// Delete extension options from config
+		$query = array(
+			'DELETE'	=> 'config',
+			'WHERE'		=> 'conf_name = \'o_pun_post_edit_period\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+	]]>
+	</uninstall>
+	
+	<hooks>
+		<hook id="aop_features_validation"><![CDATA[
+			
+			$form['pun_post_edit_period'] = !empty($form['edit_post_period']) ? intval($form['edit_post_period']) : 60;
+			
+		]]></hook>
+		
+		<hook id="aop_features_avatars_fieldset_end"><![CDATA[
+			if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+				include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+			else
+				include $ext_info['path'].'/lang/English.php';
+				?>
+			<div class="content-head">
+				<h2 class="hn">
+					<span><?php echo $lang_edit_period['Edit period']; ?></span>
+				</h2>
+			</div>
+			<fieldset class="frm-group group1">
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<span class="fld-input">
+							<input id="fld<?php echo ++$forum_page['fld_count'] ?>" type="text" value="<?php echo $forum_config['o_pun_post_edit_period']; ?>" maxlength="6" size="6" name="form[edit_post_period]"/>
+						</span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>">
+							<span><?php echo $lang_edit_period['Duration']; ?></span>
+							<small><?php echo $lang_edit_period['Duration note']; ?></small>
+						</label>
+					</div>
+				</div>
+			</fieldset>
+			<?php
+			
+		]]></hook>
+		<hook id="ed_post_selected"><![CDATA[
+		
+			if(!$forum_page['is_admmod']){
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+				else
+					include $ext_info['path'].'/lang/English.php';
+				
+					$pepconf=$forum_config['o_pun_post_edit_period'];
+					if(strtotime("-$pepconf minutes") > $cur_post['posted'])
+						message($lang_edit_period['No edit']);
+			}
+		]]></hook>		
+		<hook id="vt_row_pre_post_actions_merge"><![CDATA[
+		if(!$forum_page['is_admmod']){
+			$pepconf=$forum_config['o_pun_post_edit_period'];
+			if(strtotime("-$pepconf minutes") > $cur_post['posted'])
+				unset($forum_page['post_actions']['edit']);
+		}
+		]]></hook>
+
+
+	</hooks>
+
+</extension>
