@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>sva_mediajs</id>
 	<title>Media.js</title>
-	<version>2.2.0</version>
+	<version>2.3.0</version>
 	<description>Modification on the party of the user replaces links to a media content. http://punbb.informer.com/forums/topic/26473/extension-svamediajs/</description>
 	<author>Visman (mio.visman@yandex.ru)</author>
 
@@ -21,7 +21,6 @@
 				define('PUN_MEDIA_JS_INCLUDE', 1);
 				global $forum_loader;
 
-				$forum_loader->add_js('PUNBB.env.sva_mediajs = {url_swf: "'.forum_htmlencode($ext_info['url']).'"};', array('type' => 'inline'));
 				$forum_loader->add_js($ext_info['url'].'/js/media.min.js', array('type' => 'url', 'async' => true));
 			}
 		]]></hook>
