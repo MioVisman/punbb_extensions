@@ -14,17 +14,17 @@
 <extension engine="1.0">
 	<id>bbnotify</id>
 	<title>User Notification in Posts</title>
-	<version>1.1.1</version>
+	<version>1.1.1.1</version>
 	<description>Allowing to set notification tags for notifying users about posts they're mentioned in, optionally using a facebook-like name completion. Notifications can be send via e-mail and/or shown on top of forum.</description>
 	<author>Daniel Rathjen</author>
 
 	<minversion>1.4.4</minversion>
 	<maxtestedon>1.4.4</maxtestedon>
-	
+
 	<dependencies>
 		<dependency>pun_jquery</dependency>
 	</dependencies>
-	
+
 	<install><![CDATA[
 		// Setup main table
 		if (!$forum_db->table_exists('bbnotify')) {
@@ -75,7 +75,7 @@
 
 		$forum_db->drop_table('bbnotify');
 	]]></uninstall>
-	
+
 	<hooks>
 		<hook id="hd_head"><![CDATA[
 			require_once $ext_info['path'].'/bbnotify_functions.php';
@@ -83,7 +83,7 @@
 				if ((FORUM_PAGE == 'viewtopic' && $forum_config['o_quickpost']) || in_array(FORUM_PAGE, array('post', 'postedit'))) {
 					if (!defined('FORUM_PARSER_LOADED'))
 						require FORUM_ROOT.'include/parser.php';
-					
+
 					switch (FORUM_PAGE) {
 						case 'viewtopic':
 							$bbnotify_forum_id = $cur_topic['forum_id'];
@@ -97,15 +97,15 @@
 						default:
 							$bbnotify_forum_id = '';
 					}
-						
+
 					// Load JS
 					$forum_loader->add_js('bbnotify_fid=\''.$bbnotify_forum_id.'\'', array('type'=>'inline'));
 					$forum_loader->add_js('bbnotify_path=\''.$ext_info['url'].'\'', array('type'=>'inline'));
-					$forum_loader->add_js($ext_info['path'].'/js/acursoft-caret/jquery.caret.js');
-					$forum_loader->add_js($ext_info['path'].'/js/textarea-caret-position-master/index.js');
-					$forum_loader->add_js($ext_info['path'].'/js/bbnotify.js');
+					$forum_loader->add_js($ext_info['url'].'/js/acursoft-caret/jquery.caret.js');
+					$forum_loader->add_js($ext_info['url'].'/js/textarea-caret-position-master/index.js');
+					$forum_loader->add_js($ext_info['url'].'/js/bbnotify.js');
 				}
-				
+
 				// Load CSS
 				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/bbnotify.css'))
 					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/bbnotify.css');
@@ -161,7 +161,7 @@
 				'WHERE'		=> 'topic_id='.$topic_id
 			);
 			$bbnotify_subselect = $forum_db->query_build($bbnotify_subquery, true) or error(__FILE__, __LINE__);
-			
+
 			$bbnotify_query = array(
 				'DELETE'	=> 'bbnotify',
 				'WHERE'		=> 'post_id IN ('.$bbnotify_subselect.')'
@@ -187,7 +187,7 @@
 		<hook id="po_modify_quote_info"><![CDATA[
 			$quote_info['message'] = str_replace(array('[notify]', '[/notify]'), array('@',''), $quote_info['message']);
 		]]></hook>
-		
+
 		<hook id="he_new_bbcode_section"><![CDATA[
 			require_once $ext_info['path'].'/bbnotify_functions.php';
 			if (bbnotify_enabled()) {
@@ -211,7 +211,7 @@
 				<?php
 			}
 		]]></hook>
-		
+
 		<!-- optional hook, just relevant with extension pun_bbcode -->
 		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
 			require_once $ext_info['path'].'/bbnotify_functions.php';
@@ -219,7 +219,7 @@
 				$this->add_button(array('name'	=> 'bbnotify', 'title' => 'notify', 'tag' => 'notify', 'image' => true));
 			}
 		]]></hook>
-		
+
 		<hook id="aop_features_avatars_fieldset_end"><![CDATA[
 			// Admin options
 			if (!isset($lang_bbnotify)) {
