@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>pun_jquery</id>
 	<title>jQuery</title>
-	<description>A PunBB extension that provide jQuery lib (version 1.7.1)</description>
+	<description>A PunBB extension that provide jQuery lib (version 1.12.4)</description>
 	<author>PunBB Development Team</author>
-	<version>1.1.5.1</version>
+	<version>1.1.5.2</version>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4.2</maxtestedon>
+	<maxtestedon>1.4.4</maxtestedon>
 
 
 	<install><![CDATA[
@@ -31,7 +31,7 @@
 			define('PUN_JQUERY_INCLUDE_METHOD_MICROSOFT_CDN', 2);
 			define('PUN_JQUERY_INCLUDE_METHOD_JQUERY_CDN', 3);
 
-			define('PUN_JQUERY_VERSION', '1.7.1');
+			define('PUN_JQUERY_VERSION', '1.12.4');
 		]]></hook>
 
 
@@ -123,15 +123,15 @@
 			switch ($forum_config['o_pun_jquery_include_method'])
 			{
 				case PUN_JQUERY_INCLUDE_METHOD_GOOGLE_CDN:
-					$ext_pun_jquery_url = '//ajax.googleapis.com/ajax/libs/jquery/'.PUN_JQUERY_VERSION.'/jquery.min.js';
+					$ext_pun_jquery_url = 'https://ajax.googleapis.com/ajax/libs/jquery/'.PUN_JQUERY_VERSION.'/jquery.min.js';
 					break;
 
 				case PUN_JQUERY_INCLUDE_METHOD_MICROSOFT_CDN:
-					$ext_pun_jquery_url = '//ajax.aspnetcdn.com/ajax/jQuery/jquery-'.PUN_JQUERY_VERSION.'.min.js';
+					$ext_pun_jquery_url = 'https//ajax.aspnetcdn.com/ajax/jQuery/jquery-'.PUN_JQUERY_VERSION.'.min.js';
 					break;
 
 				case PUN_JQUERY_INCLUDE_METHOD_JQUERY_CDN:
-					$ext_pun_jquery_url = '//code.jquery.com/jquery-'.PUN_JQUERY_VERSION.'.min.js';
+					$ext_pun_jquery_url = 'https://code.jquery.com/jquery-'.PUN_JQUERY_VERSION.'.min.js';
 					break;
 
 				case PUN_JQUERY_INCLUDE_METHOD_LOCAL:
