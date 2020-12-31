@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>bbnotify</id>
 	<title>User Notification in Posts</title>
-	<version>1.1.1.1</version>
+	<version>1.1.1.2</version>
 	<description>Allowing to set notification tags for notifying users about posts they're mentioned in, optionally using a facebook-like name completion. Notifications can be send via e-mail and/or shown on top of forum.</description>
 	<author>Daniel Rathjen</author>
 

@@ -7,13 +7,13 @@ function bbnotify_enabled() {
 
 function bbnotify_match_users($text, $fid) {
 	global $forum_db;
-	
+
 	$bbnotify_userlist = array();
 
 	preg_match_all('#\[notify\]([^\[]*?)\[/notify\]#', $text, $bbnotify_all_matches, PREG_PATTERN_ORDER);
 	if (count($bbnotify_all_matches[1]) > 0) {
 		$bbnotify_sql = array();
-		
+
 		foreach ($bbnotify_all_matches[1] as $bbnotify_match) {
 			$bbnotify_sql[] = "'".$forum_db->escape($bbnotify_match)."'";
 		}
@@ -32,50 +32,52 @@ function bbnotify_match_users($text, $fid) {
 			),
 			'WHERE'		=> 'u.id > 1 AND u.group_id != '.FORUM_UNVERIFIED.' AND u.username in('.implode(',', $bbnotify_sql).') AND (fp.read_forum IS NULL OR fp.read_forum=1) AND g.g_read_board=1'
 		);
-		
+
 		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
-		
+
 		while ($bbnotify_user = $forum_db->fetch_assoc($result)) {
 			$bbnotify_userlist[] = $bbnotify_user;
 		}
 	}
-	
+
 	return $bbnotify_userlist;
 }
 
 function bbnotify_parse_tags($text, $is_signature) {
+	global $forum_url;
+
 	// notify not supported in signature
 	if ($is_signature) {
 		return str_replace(array('[notify]', '[/notify]'), '', $text);
 	}
-	
+
 	// forum id -1: no need to check here as we don't notify anybody
 	$bbnotify_userlist = bbnotify_match_users($text, -1);
-	
+
 	if (count($bbnotify_userlist) == 0) {
 		return $text;
 	}
-	
+
 	$bbnotify_search = array();
 	$bbnotify_replace = array();
-	
+
 	foreach ($bbnotify_userlist as $bbnotify_user) {
 		$bbnotify_search[] = '[notify]'.$bbnotify_user['username'].'[/notify]';
-		$bbnotify_replace[] = '<a href="profile.php?id='.(int)$bbnotify_user['id'].'">@'.forum_htmlencode($bbnotify_user['username']).'</a>';
+		$bbnotify_replace[] = '<a href="'.forum_link($forum_url['user'], (int) $bbnotify_user['id']).'">@'.forum_htmlencode($bbnotify_user['username']).'</a>';
 	}
-	
+
 	return str_replace($bbnotify_search, $bbnotify_replace, $text);
 }
 
 function bbnotify_send_notifications($post_info, $new_pid) {
 	global $lang_common, $forum_user, $forum_config, $forum_url, $forum_db;
-	
+
 	$bbnotify_userlist = bbnotify_match_users($post_info['message'], $post_info['forum_id']);
-	
+
 	if (count($bbnotify_userlist) == 0) {
 		return;
 	}
-	
+
 	if (!defined('FORUM_EMAIL_FUNCTIONS_LOADED'))
 		require FORUM_ROOT.'include/email.php';
 
@@ -85,7 +87,7 @@ function bbnotify_send_notifications($post_info, $new_pid) {
 	foreach ($bbnotify_userlist as $cur_recipient) {
 		// don't notify yourself!
 		if ($cur_recipient['id'] == $forum_user['id']) continue;
-		
+
 		if ($forum_config['o_bbnotify_send_email'] == '1') {
 			// Is the subscription e-mail for $cur_recipient['language'] cached or not?
 			if (!isset($notification_emails[$cur_recipient['language']]) && file_exists(__DIR__.'/lang/'.$cur_recipient['language'].'/mail_templates/new_notify.tpl')) {
@@ -115,7 +117,7 @@ function bbnotify_send_notifications($post_info, $new_pid) {
 				forum_mail($cur_recipient['email'], $notification_emails[$cur_recipient['language']][0], $notification_emails[$cur_recipient['language']][1]);
 			}
 		}
-		
+
 		if ($forum_config['o_bbnotify_show_list'] == '1') {
 			// Save to DB
 			$query = array(
@@ -123,7 +125,7 @@ function bbnotify_send_notifications($post_info, $new_pid) {
 				'INTO'			=> 'bbnotify',
 				'VALUES'		=> $cur_recipient['id'].', '.$new_pid
 			);
-			
+
 			$forum_db->query_build($query) or error(__FILE__, __LINE__);
 		}
 	}
@@ -131,12 +133,12 @@ function bbnotify_send_notifications($post_info, $new_pid) {
 
 function bbnotify_print_notifications() {
 	global $forum_user, $forum_config, $forum_url, $forum_db, $lang_common, $lang_bbnotify, $tpl_main;
-	
+
 	// Forum language is just loaded on some views, we need it always
 	require FORUM_ROOT.'lang/'.$forum_user['language'].'/forum.php';
-	
+
 	if ($forum_user['is_guest']) return '';
-	
+
 	$query = array(
 		'SELECT'	=> 'p.id AS notify_post_id, p.poster AS notify_poster, p.posted AS notify_posted, t.id as topic_id, t.poster, t.subject, t.num_replies, t.last_post, t.last_post_id, t.last_poster, t.closed, t.moved_to, t.forum_id',
 		'FROM'		=> 'bbnotify n',
@@ -167,28 +169,28 @@ function bbnotify_print_notifications() {
 	);
 
 	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
-	
+
 	$notifications = array();
 
 	while ($cur_post = $forum_db->fetch_assoc($result)) {
 		$notifications[] = $cur_post;
 	}
-	
+
 	if (empty($notifications)) return '';
-	
+
 	$forum_page = array();
 	$forum_page['item_header'] = array();
 	$forum_page['item_header']['subject']['title'] = '<strong class="subject-title">'.$lang_bbnotify['Notify title'].'</strong>';
 	$forum_page['item_header']['info']['notifypost'] = '<strong class="info-notifypost">'.$lang_bbnotify['Notify post'].'</strong>';
 	$forum_page['item_header']['info']['lastpost'] = '<strong class="info-lastpost">'.$lang_forum['last post'].'</strong>';
-	
+
 	$output = '
 	<div id="bbnotify-title" class="main-subhead">
 		<p class="item-summary forum-views"><span>'.sprintf($lang_forum['Forum subtitle'], implode(' ', $forum_page['item_header']['subject']), implode(', ', $forum_page['item_header']['info'])).'</span></p>
 	</div>
 	<div id="bbnotify-list" class="main-content main-forum forum-views">
 	';
-	
+
 	$forum_page['item_count'] = 0;
 	$tracked_topics = get_tracked_topics();
 
@@ -209,7 +211,7 @@ function bbnotify_print_notifications() {
 
 			// Combine everything to produce the Topic heading
 			$forum_page['item_body']['subject']['title'] = '<h3 class="hn"><span class="item-num">'.forum_number_format($forum_page['item_count']).'</span>'.$forum_page['item_title']['link'].'</h3>';
-			
+
 			$forum_page['item_body']['info']['notifypost'] = '<li class="info-notifypost"><span class="label">'.$lang_bbnotify['Notify post'].'</span> <strong><a href="'.forum_link($forum_url['post'], $cur_topic['notify_post_id']).'">'.format_time($cur_topic['notify_posted']).'</a></strong> <cite>'.sprintf($lang_forum['by poster'], forum_htmlencode($cur_topic['notify_poster'])).'</cite></li>';
 
 			$forum_page['item_body']['info']['lastpost'] = '<li class="info-lastpost"><span class="label">'.$lang_forum['No lastpost info'].'</span></li>';
@@ -241,7 +243,7 @@ function bbnotify_print_notifications() {
 
 			if (!empty($forum_page['item_nav']))
 				$forum_page['item_subject']['nav'] = '<span class="item-nav">'.sprintf($lang_forum['Topic navigation'], implode('&#160;&#160;', $forum_page['item_nav'])).'</span>';
-			
+
 			$forum_page['item_body']['info']['notifypost'] = '<li class="info-notifypost"><span class="label">'.$lang_bbnotify['Notify post'].'</span> <strong><a href="'.forum_link($forum_url['post'], $cur_topic['notify_post_id']).'">'.format_time($cur_topic['notify_posted']).'</a></strong> <cite>'.sprintf($lang_forum['by poster'], forum_htmlencode($cur_topic['notify_poster'])).'</cite></li>';
 
 			$forum_page['item_body']['info']['lastpost'] = '<li class="info-lastpost"><span class="label">'.$lang_forum['Last post'].'</span> <strong><a href="'.forum_link($forum_url['post'], $cur_topic['last_post_id']).'">'.format_time($cur_topic['last_post']).'</a></strong> <cite>'.sprintf($lang_forum['by poster'], forum_htmlencode($cur_topic['last_poster'])).'</cite></li>';
