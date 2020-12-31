@@ -1,0 +1,101 @@
+#pun_bbcode_bar input[name="bbnotify"].image {
+	background: url(img/icon.png) 0 0 no-repeat;
+}
+
+#bbnotify_suggestions{
+	padding:0;
+	border:1px solid #ccc;
+	display:none;
+	position:absolute;
+}
+
+.help-box .bbnotify-example {
+	position:relative;
+}
+	
+.help-box #bbnotify_suggestions {
+	display:inline;
+	position:relativ;
+	top:1.2em;
+}
+
+#bbnotify_suggestions p {
+	cursor:pointer;
+	padding:5px;
+	color:#00579c;
+	background:#f2f4fa;
+    font:75%/1em Verdana, Helvetica, Arial, sans-serif;
+    font-style: normal;
+    font-weight: normal
+}
+
+#bbnotify_suggestions p:hover, #bbnotify_suggestions p.bbnotify-hover {
+	color:#cd0021;
+	background:#fbfbfb;
+}
+
+.item-summary .info-notifypost {
+    margin-left: 100%;
+    left: 960em
+}
+
+#bbnotify-title {
+	color:#000;
+	text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.15);
+	background:#a11;
+	background-image: -moz-linear-gradient(bottom, #c82e2e 0, #dd4646 100%);
+	background-image: -ms-linear-gradient(bottom, #c82e2e 0, #dd4646 100%);
+	background-image: -o-linear-gradient(bottom, #c82e2e 0, #dd4646 100%);
+	background-image: -webkit-gradient(linear, 0 100%, 0 0, from(#c82e2e), to(#dd4646));
+	background-image: -webkit-linear-gradient(bottom, #c82e2e 0, #dd4646 100%);
+	background-image: linear-gradient(bottom, #c82e2e 0, #dd4646 100%);
+}
+
+#bbnotify-list ul {
+	width: 40em;
+	right: -35em;
+	margin-left: -40em;
+}
+
+
+li.info-notifypost {
+    width: 20em
+}
+
+li.info-notifypost cite {
+    overflow: hidden;
+    width: 18em
+}
+
+li.info-notifypost cite,
+li.info-notifypost span {
+    display: block;
+    padding: 0 1em;
+    font-style: normal;
+    font-weight: normal
+}
+
+li.info-notifypost strong {
+    padding: 0 0 0 1em;
+    font-style: normal;
+    font-weight: normal
+}
+
+.main-content .main-item .info-notifypost cite{display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -o-text-overflow: ellipsis; width: 100%;}
+
+@media screen and (max-width: 760px) {
+	li.info-notifypost{width:9em; padding-right: 1em;}
+	li.info-notifypost strong{display:block;}
+	.item-summary .info-notifypost{left: 979em;}
+	li.info-notifypost {width:9em}
+	#bbnotify-list ul{width:20em;margin-left:-20em;right:-21em}
+}
+
+@media screen and (max-width: 600px) {
+	.item-summary .info-notifypost{left: 989em;}
+	.info-lastpost{display:none;}
+}
+
+@media screen and (max-width: 460px) {
+	.info-notifypost{display:none;}
+}

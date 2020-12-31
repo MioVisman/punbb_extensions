@@ -1,0 +1,264 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * BB-Tags for user notification
+ *
+ * @copyright (C) 2016 Daniel Rathjen
+ * @license http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ * @package bbnotify
+ */
+-->
+
+<extension engine="1.0">
+	<id>bbnotify</id>
+	<title>User Notification in Posts</title>
+	<version>1.1.1</version>
+	<description>Allowing to set notification tags for notifying users about posts they're mentioned in, optionally using a facebook-like name completion. Notifications can be send via e-mail and/or shown on top of forum.</description>
+	<author>Daniel Rathjen</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+	
+	<dependencies>
+		<dependency>pun_jquery</dependency>
+	</dependencies>
+	
+	<install><![CDATA[
+		// Setup main table
+		if (!$forum_db->table_exists('bbnotify')) {
+			$schema = array(
+				'FIELDS'			=> array(
+					'id'				=> array(
+						'datatype'		=> 'SERIAL',
+						'allow_null'	=> false
+					),
+					'user_id'			=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'		=> '0'
+					),
+					'post_id'		=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'       => '0'
+					)
+				),
+				'PRIMARY KEY'	=> array('id'),
+				'INDEXES'		=> array(
+					'user_id_idx'		=> array('user_id'),
+					'post_id_idx'	    => array('post_id'),
+				)
+			);
+
+			$forum_db->create_table('bbnotify', $schema);
+		}
+
+		// Add extension options to the config table
+		$bbnotify_config = array(
+			'o_bbnotify_send_email'		=> '1',
+			'o_bbnotify_show_list'		=> '1',
+		);
+
+		foreach ($bbnotify_config as $conf_name => $conf_value) {
+			forum_config_add($conf_name, $conf_value);
+		}
+	]]></install>
+
+
+	<uninstall><![CDATA[
+		// Delete extension options from the config
+		forum_config_remove(array(
+			'o_bbnotify_send_email',
+			'o_bbnotify_show_list'));
+
+		$forum_db->drop_table('bbnotify');
+	]]></uninstall>
+	
+	<hooks>
+		<hook id="hd_head"><![CDATA[
+			require_once $ext_info['path'].'/bbnotify_functions.php';
+			if (bbnotify_enabled()) {
+				if ((FORUM_PAGE == 'viewtopic' && $forum_config['o_quickpost']) || in_array(FORUM_PAGE, array('post', 'postedit'))) {
+					if (!defined('FORUM_PARSER_LOADED'))
+						require FORUM_ROOT.'include/parser.php';
+					
+					switch (FORUM_PAGE) {
+						case 'viewtopic':
+							$bbnotify_forum_id = $cur_topic['forum_id'];
+							break;
+						case 'post':
+							$bbnotify_forum_id = $cur_posting['id'];
+							break;
+						case 'postedit':
+							$bbnotify_forum_id = $cur_post['fid'];
+							break;
+						default:
+							$bbnotify_forum_id = '';
+					}
+						
+					// Load JS
+					$forum_loader->add_js('bbnotify_fid=\''.$bbnotify_forum_id.'\'', array('type'=>'inline'));
+					$forum_loader->add_js('bbnotify_path=\''.$ext_info['url'].'\'', array('type'=>'inline'));
+					$forum_loader->add_js($ext_info['path'].'/js/acursoft-caret/jquery.caret.js');
+					$forum_loader->add_js($ext_info['path'].'/js/textarea-caret-position-master/index.js');
+					$forum_loader->add_js($ext_info['path'].'/js/bbnotify.js');
+				}
+				
+				// Load CSS
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/bbnotify.css'))
+					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/bbnotify.css');
+				else
+					$forum_loader->add_css($ext_info['url'].'/css/Oxygen/bbnotify.css');
+			}
+		]]></hook>
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags[] = 'notify';
+			$tags_opened[] = 'notify';
+			$tags_closed[] = 'notify';
+			$tags_inline[] = 'notify';
+			$tags_trim[] = 'notify';
+			$tags_limit_bbcode['notify'] = array();
+		]]></hook>
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			require_once $ext_info['path'].'/bbnotify_functions.php';
+			$text = bbnotify_parse_tags($text, $is_signature);
+		]]></hook>
+		<hook id="po_pre_redirect"><![CDATA[
+			require_once $ext_info['path'].'/bbnotify_functions.php';
+			if (bbnotify_enabled()) {
+				bbnotify_send_notifications($post_info, $new_pid);
+			}
+		]]></hook>
+		<hook id="vt_end"><![CDATA[
+			// Delete any notifications for this user and posts on current page
+			if (!empty($posts_id)) {
+				$bbnotify_query = array(
+					'DELETE'	=> 'bbnotify',
+					'WHERE'		=> 'user_id='.$forum_user['id'].' AND post_id IN ('.implode(',',$posts_id).')'
+				);
+				$forum_db->query_build($bbnotify_query) or error(__FILE__, __LINE__);
+			}
+		]]></hook>
+		<hook id="hd_gen_elements"><![CDATA[
+			if ($forum_config['o_bbnotify_show_list'] == '1') {
+				require_once $ext_info['path'].'/bbnotify_functions.php';
+				if (!isset($lang_bbnotify)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php'))
+						include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					else
+						include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+				$gen_elements['<!-- forum_announcement -->'] .= bbnotify_print_notifications();
+			}
+		]]></hook>
+		<hook id="fn_delete_topic_start"><![CDATA[
+			// Delete any notifications for this topic
+			$bbnotify_subquery = array(
+				'SELECT'	=> 'id',
+				'FROM'		=> 'posts',
+				'WHERE'		=> 'topic_id='.$topic_id
+			);
+			$bbnotify_subselect = $forum_db->query_build($bbnotify_subquery, true) or error(__FILE__, __LINE__);
+			
+			$bbnotify_query = array(
+				'DELETE'	=> 'bbnotify',
+				'WHERE'		=> 'post_id IN ('.$bbnotify_subselect.')'
+			);
+			$forum_db->query_build($bbnotify_query) or error(__FILE__, __LINE__);
+		]]></hook>
+		<hook id="fn_delete_post_start"><![CDATA[
+			// Delete any notifications for this post
+			$bbnotify_query = array(
+				'DELETE'	=> 'bbnotify',
+				'WHERE'		=> 'post_id='.$post_id
+			);
+			$forum_db->query_build($bbnotify_query) or error(__FILE__, __LINE__);
+		]]></hook>
+		<hook id="ca_fn_prune_qr_prune_posts"><![CDATA[
+			// Delete any notifications for this post
+			$bbnotify_query = array(
+				'DELETE'	=> 'bbnotify',
+				'WHERE'		=> 'post_id IN ('.implode(',',$post_ids).')'
+			);
+			$forum_db->query_build($bbnotify_query) or error(__FILE__, __LINE__);
+		]]></hook>
+		<hook id="po_modify_quote_info"><![CDATA[
+			$quote_info['message'] = str_replace(array('[notify]', '[/notify]'), array('@',''), $quote_info['message']);
+		]]></hook>
+		
+		<hook id="he_new_bbcode_section"><![CDATA[
+			require_once $ext_info['path'].'/bbnotify_functions.php';
+			if (bbnotify_enabled()) {
+				if (!isset($lang_bbnotify)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php'))
+						include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					else
+						include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+				?>
+				<div class="ct-box help-box">
+					<h3 class="hn"><span><?php echo $lang_bbnotify['Help info'] ?></span></h3>
+					<div class="entry-content">
+						<code>[notify]<?php echo $lang_bbnotify['Help tag username'] ?>[/notify]</code> <span><?php echo $lang_bbnotify['Help produces profile link'] ?></span>
+						<samp><a href="#">@<?php echo $lang_bbnotify['Help tag username'] ?></a></samp>
+						<?php echo $lang_bbnotify['Help typing'] ?> <code>@<?php echo $lang_bbnotify['Help tag username firstchar'] ?></code> <span><?php echo $lang_bbnotify['Help produces suggestion list'] ?></span>
+						<samp class="bbnotify-example">@<?php echo $lang_bbnotify['Help tag username firstchar'] ?><div id="bbnotify_suggestions"><p class="bbnotify-hover"><?php echo $lang_bbnotify['Help tag username'] ?></p><p><?php echo $lang_bbnotify['Help tag username 2'] ?></p><p><?php echo $lang_bbnotify['Help tag username 3'] ?></p></div><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p></samp>
+						<span><?php echo $lang_bbnotify['Help click on username'] ?></span>
+					</div>
+				</div>
+				<?php
+			}
+		]]></hook>
+		
+		<!-- optional hook, just relevant with extension pun_bbcode -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			require_once $ext_info['path'].'/bbnotify_functions.php';
+			if (bbnotify_enabled()) {
+				$this->add_button(array('name'	=> 'bbnotify', 'title' => 'notify', 'tag' => 'notify', 'image' => true));
+			}
+		]]></hook>
+		
+		<hook id="aop_features_avatars_fieldset_end"><![CDATA[
+			// Admin options
+			if (!isset($lang_bbnotify)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php'))
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				else
+					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+			}
+
+			$forum_page['group_count'] = $forum_page['item_count'] = 0;
+?>
+			<div class="content-head">
+				<h2 class="hn"><span><?php echo $lang_bbnotify['Features title'] ?></span></h2>
+			</div>
+			<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+				<legend class="group-legend"><span><?php echo $lang_bbnotify['Notification settings'] ?></span></legend>
+				<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<legend><span><?php echo $lang_bbnotify['Notify users'] ?></span></legend>
+					<div class="mf-box">
+						<div class="mf-item">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[bbnotify_send_email]" value="1"<?php if ($forum_config['o_bbnotify_send_email'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_bbnotify['Send email'] ?></label>
+						</div>
+						<div class="mf-item">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[bbnotify_show_list]" value="1"<?php if ($forum_config['o_bbnotify_show_list'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_bbnotify['Show list'] ?></label>
+						</div>
+					</div>
+				</fieldset>
+			</fieldset>
+<?php
+		]]></hook>
+
+		<hook id="aop_features_validation"><![CDATA[
+			if (!isset($form['bbnotify_send_email']) || $form['bbnotify_send_email'] != '1')
+				$form['bbnotify_send_email'] = '0';
+
+			if (!isset($form['bbnotify_show_list']) || $form['bbnotify_show_list'] != '1')
+				$form['bbnotify_show_list'] = '0';
+		]]></hook>
+	</hooks>
+</extension>
