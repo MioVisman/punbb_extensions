@@ -7,7 +7,7 @@
 	<title>jQuery</title>
 	<description>A PunBB extension that provide jQuery lib (version 1.12.4)</description>
 	<author>PunBB Development Team</author>
-	<version>1.1.5.2</version>
+	<version>1.1.5.3</version>
 
 	<minversion>1.4RC1</minversion>
 	<maxtestedon>1.4.4</maxtestedon>
@@ -127,7 +127,7 @@
 					break;
 
 				case PUN_JQUERY_INCLUDE_METHOD_MICROSOFT_CDN:
-					$ext_pun_jquery_url = 'https//ajax.aspnetcdn.com/ajax/jQuery/jquery-'.PUN_JQUERY_VERSION.'.min.js';
+					$ext_pun_jquery_url = 'https://ajax.aspnetcdn.com/ajax/jQuery/jquery-'.PUN_JQUERY_VERSION.'.min.js';
 					break;
 
 				case PUN_JQUERY_INCLUDE_METHOD_JQUERY_CDN:

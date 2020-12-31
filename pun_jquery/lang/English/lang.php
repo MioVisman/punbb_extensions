@@ -9,7 +9,7 @@ $lang_pun_jquery = array(
 
 	'Include method'					=> 'Include method',
 
-	'Include method local label'		=> 'Local',
+	'Include method local label'		=> 'Local (recommended)',
 	'Include method google label'		=> 'Google Ajax API CDN ',
 	'Include method microsoft label'	=> 'Microsoft CDN',
 	'Include method jquery label'		=> 'jQuery CDN',
