@@ -7,7 +7,7 @@
 	<title>jQuery</title>
 	<description>A PunBB extension that provide jQuery lib (version 1.7.1)</description>
 	<author>PunBB Development Team</author>
-	<version>1.1.5</version>
+	<version>1.1.5.1</version>
 
 	<minversion>1.4RC1</minversion>
 	<maxtestedon>1.4.2</maxtestedon>
@@ -47,7 +47,7 @@
 			// Reset counter
 			$forum_page['group_count'] = $forum_page['item_count'] = 0;
 ?>
-			<div class="content-head">
+			<div id="pun_jquery_settings" class="content-head">
 				<h2 class="hn"><span><?php echo sprintf($lang_pun_jquery['Setup jquery'], PUN_JQUERY_VERSION) ?></span></h2>
 			</div>
 
@@ -77,6 +77,27 @@
 			</fieldset>
 
 <?php
+		]]></hook>
+
+
+		<!-- Add link to settings in extension page -->
+		<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+			if ($ext['id'] == 'pun_jquery' && !isset($forum_page['ext_actions']['pun_jquery_settings'])) {
+				if (!isset($lang_pun_jquery)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+					} else {
+						require $ext_info['path'].'/lang/English/lang.php';
+					}
+				}
+
+				$forum_page['ext_actions']['pun_jquery_settings'] = '
+					<span>
+						<a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.
+							$lang_pun_jquery['Go to settings'].'
+						</a>
+					</span>';
+			}
 		]]></hook>
 
 
