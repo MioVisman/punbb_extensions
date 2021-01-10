@@ -27,7 +27,7 @@
 <extension engine="1.0">
 	<id>show_links_blank</id>
 	<title>Show links in new window</title>
-	<version>1.1.1.1</version>
+	<version>1.1.1.2</version>
 	<description>Open all links from posts, signatures and user websites in new windows</description>
 	<author>YonasH</author>
 
@@ -74,8 +74,6 @@ if (isset($forum_page['user_contact']['website']))
 	]]></hook>
 
 		<hook id="co_common"><![CDATA[
-$pun_extensions_used = array_merge(isset($pun_extensions_used) ? $pun_extensions_used : array(), array($ext_info['id']));
-
 function sva_is_external($link)
 {
 	global $base_url;
@@ -85,13 +83,5 @@ function sva_is_external($link)
 	return ! preg_match('%//(www\.)?' . preg_quote($base, '%') . '%i', $link);
 }
 	]]></hook>
-
-		<hook id="ft_about_end" priority="10"><![CDATA[
-if (!defined('PUN_EXTENSIONS_USED') && !empty($pun_extensions_used))
-{
-	define('PUN_EXTENSIONS_USED', 1);
-	echo '<p id="extensions-used">Currently used extensions: '.implode(', ', $pun_extensions_used).'. Copyright &copy; 2008 <a href="http://punbb.informer.com/">PunBB</a></p>';
-}
-		]]></hook>
 	</hooks>
 </extension>
