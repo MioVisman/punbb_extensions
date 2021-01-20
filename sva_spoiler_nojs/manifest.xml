@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>sva_spoiler_nojs</id>
+	<title>Spoiler BBcode (no javascript)</title>
+	<version>1.0.0</version>
+	<description>Add BBcode tag «spoiler». This bbcode uses html &lt;details&gt; and &lt;summary&gt; tags for its display. Can I use: https://caniuse.com/details</description>
+	<author>Visman (mio.visman@yandex.ru)</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<hooks>
+		<!-- -->
+		<hook id="hd_head"><![CDATA[
+			function sva_ssfsnojs($ext_info)
+			{
+				global $forum_loader, $forum_user;
+				static $done;
+
+				if (! empty($done))
+					return;
+
+				$done = true;
+
+				if (file_exists($ext_info['path'].'/style/'.$forum_user['style'].'.css'))
+					$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'.css', array('type' => 'url', 'weight' => '100', 'media' => 'screen'));
+				else
+					$forum_loader->add_css($ext_info['url'].'/style/Oxygen.css', array('type' => 'url', 'weight' => '100', 'media' => 'screen'));
+			}
+		]]></hook>
+
+		<!-- -->
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			$tags_without_attr[] = 'spoiler';
+		]]></hook>
+
+		<!-- -->
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags[] = 'spoiler';
+			$tags_opened[] = 'spoiler';
+			$tags_closed[] = 'spoiler';
+			$tags_nested['spoiler'] = 5;
+			$tags_block[] = 'spoiler';
+//			$tags_fix[] = 'spoiler';
+			$tags_limit_bbcode['*'][] = 'spoiler';
+		]]></hook>
+
+		<!-- -->
+		<hook id="ps_do_bbcode_end"><![CDATA[
+			if (strpos($text, '[spoiler') !== false)
+			{
+				$text = str_replace('[spoiler]', '</p><details class="f-bb-spoiler"><summary class="f-bb-s-head">Spoiler</summary><div class="f-bb-s-body quotebox"><p>', $text);
+				$text = preg_replace('#\[spoiler=([^\r\n]*?)\]#s', '</p><details class="f-bb-spoiler"><summary class="f-bb-s-head">$1</summary><div class="f-bb-s-body quotebox"><p>', $text);
+				$text = str_replace('[/spoiler]', '</p></div></details><p>', $text);
+
+				sva_ssfsnojs($ext_info);
+			}
+		]]></hook>
+
+		<!-- pun_bbcode - add button -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name' => 'sva_spoiler', 'title' => 'spoiler', 'tag' => 'spoiler', 'image' => true));
+		]]></hook>
+
+		<!-- pun_bbcode - add styles for button -->
+		<hook id="pun_bbcode_styles_loaded"><![CDATA[
+			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
+				sva_ssfsnojs($ext_info);
+			}
+		]]></hook>
+	</hooks>
+</extension>

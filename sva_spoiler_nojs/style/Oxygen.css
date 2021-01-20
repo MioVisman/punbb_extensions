@@ -1,0 +1,34 @@
+#brd-wrap .f-bb-s-head {
+  margin: 0;
+  padding: .35em 0;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#brd-wrap .f-bb-s-body {
+  margin: 0;
+}
+
+#brd-wrap .f-bb-s-head::after {
+  content: "(click to open)";
+  font-size: 0.917em;
+  font-weight: normal;
+  margin-left: 0.3125em;
+  opacity: 0.6;
+}
+
+html[lang="ru"] #brd-wrap .f-bb-s-head::after {
+  content: "(открыть)";
+}
+
+#brd-wrap details[open] > .f-bb-s-head::after {
+  content: "(click to close)";
+}
+
+html[lang="ru"] #brd-wrap details[open] > .f-bb-s-head::after {
+  content: "(закрыть)";
+}
+
+#pun_bbcode_bar #pun_bbcode_button_sva_spoiler.image {
+  background-image: url("../img/sp.png");
+}
