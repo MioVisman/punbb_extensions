@@ -35,5 +35,3 @@ $lang_pun_stop_bots = array(
 	'Answer'								=>	'Answer',
 	'Stop bots question legend'				=>	'Pun stop bots question'
 );
-
-?>

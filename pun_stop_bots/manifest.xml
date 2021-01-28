@@ -14,12 +14,12 @@
 <extension engine="1.0">
 	<id>pun_stop_bots</id>
 	<title>Stop spam from bots</title>
-	<version>0.3.3</version>
+	<version>0.3.3.1</version>
 	<description>The extension will ask some questions to prevent bot registration and posting.</description>
 	<author>PunBB Development Team</author>
 
-	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
 
 	<install><![CDATA[
 		// Table with questions.
@@ -101,13 +101,13 @@
 				else
 					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
 
-				$pun_stop_bots_true_answer = FALSE;
+				$pun_stop_bots_true_answer = false;
 				if (isset($_POST['pun_stop_bots_submit']))
 				{
 					$query = array(
 						'SELECT'	=>	'pun_stop_bots_question_id',
 						'FROM'		=>	'online',
-						'WHERE'		=>	'ident = \''.$forum_user['ident'].'\''
+						'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
 					);
 					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
 					$row = $forum_db->fetch_assoc($result);
@@ -117,11 +117,11 @@
 					else
 						message($lang_common['Bad request']);
 
-					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim(strtolower($_POST['pun_stop_bots_answer'])) : null;
+					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim($_POST['pun_stop_bots_answer']) : null;
 					if (!empty($answer))
 						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $question_id);
 					else
-						$pun_stop_bots_true_answer = FALSE;
+						$pun_stop_bots_true_answer = false;
 
 					if (!$pun_stop_bots_true_answer)
 					{
@@ -132,7 +132,7 @@
 						$query = array(
 							'UPDATE'	=>	'online',
 							'SET'		=>	'pun_stop_bots_question_id = NULL',
-							'WHERE'		=>	'ident = \''.$forum_user['ident'].'\''
+							'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
 						);
 						$forum_db->query_build($query) or error(__FILE__, __LINE__);
 					}
@@ -186,7 +186,7 @@
 				else
 					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
 
-				$pun_stop_bots_true_answer = FALSE;
+				$pun_stop_bots_true_answer = false;
 
 				//Check up the cookie.
 				if (isset($_COOKIE[PUN_STOP_BOTS_COOKIE_NAME]))
@@ -197,7 +197,7 @@
 					$query = array(
 						'SELECT'	=> 'pun_stop_bots_question_id',
 						'FROM'		=> $forum_user['is_guest'] ? 'online' : 'users',
-						'WHERE'		=> $forum_user['is_guest'] ? 'ident = \''.$forum_user['ident'].'\'' : 'id = '.$forum_user['id']
+						'WHERE'		=> $forum_user['is_guest'] ? 'ident = \''.$forum_db->escape($forum_user['ident']).'\'' : 'id = '.$forum_user['id']
 					);
 					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
 					$row = $forum_db->fetch_assoc($result);
@@ -207,11 +207,11 @@
 					else
 						message($lang_common['Bad request']);
 
-					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim(strtolower($_POST['pun_stop_bots_answer'])) : null;
+					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim($_POST['pun_stop_bots_answer']) : null;
 					if (!empty($answer))
 						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $question_id);
 					else
-						$pun_stop_bots_true_answer = FALSE;
+						$pun_stop_bots_true_answer = false;
 					//Generate new question in case of incorrect answer.
 					if (!$pun_stop_bots_true_answer)
 						$new_question_id = $forum_user['is_guest'] ? pun_stop_bots_generate_guest_question_id() : pun_stop_bots_generate_user_question_id();
@@ -228,7 +228,7 @@
 					$query = array(
 						'UPDATE'	=>	'online',
 						'SET'		=>	'pun_stop_bots_question_id = NULL',
-						'WHERE'		=>	'ident = \''.$forum_user['ident'].'\''
+						'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
 					);
 					$forum_db->query_build($query) or error(__FILE__, __LINE__);
 				}
@@ -293,7 +293,7 @@
 				if (isset($_POST['add_question']) && !empty($pun_stop_bots_questions))
 				{
 					$question = forum_trim($_POST['question']);
-					$answers = pun_stop_bots_prepare_answers(strtolower(forum_trim($_POST['answers'])));
+					$answers = pun_stop_bots_prepare_answers($_POST['answers']);
 
 					if ($question == '' || $answers == '')
 						$forum_page['errors'][] = $lang_pun_stop_bots['Management err empty fields'];
@@ -301,7 +301,7 @@
 					if (empty($forum_page['errors']))
 					{
 						$stop_bots_error = pun_stop_bots_add_question($question, $answers);
-						if ($stop_bots_error !== TRUE)
+						if ($stop_bots_error !== true)
 							$forum_page['errors'][] = $stop_bots_error;
 						else
 						{
@@ -317,7 +317,7 @@
 						message($lang_common['Bad request']);
 
 					$question = forum_trim($_POST['question'][$question_id]);
-					$answers = pun_stop_bots_prepare_answers(strtolower(forum_trim($_POST['answers'][$question_id])));
+					$answers = pun_stop_bots_prepare_answers($_POST['answers'][$question_id]);
 
 					if ($question == '' || $answers == '')
 						$forum_page['errors'][] = $lang_pun_stop_bots['Management err empty fields'];
@@ -325,7 +325,7 @@
 					if (empty($forum_page['errors']))
 					{
 						$stop_bots_error = pun_stop_bots_update_question($question_id, $question, $answers);
-						if ($stop_bots_error !== TRUE)
+						if ($stop_bots_error !== true)
 							$forum_page['errors'][] = $stop_bots_error;
 						else
 						{
@@ -341,7 +341,7 @@
 						message($lang_common['Bad request']);
 
 					$stop_bots_error = pun_stop_bots_delete_question($question_id);
-					if ($stop_bots_error !== TRUE)
+					if ($stop_bots_error !== true)
 						$forum_page['errors'][] = $stop_bots_error;
 					else
 					{

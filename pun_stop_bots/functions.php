@@ -23,18 +23,10 @@ function pun_stop_bots_generate_cache()
 	);
 	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
 
-	$output = $questions = array();
+	$output = array();
 	while ($row = $forum_db->fetch_assoc($result))
 	{
-		$questions[] = $row;
-	}
-
-	if (!empty($questions))
-	{
-		foreach ($questions as $cur_item)
-		{
-			$output['questions'][$cur_item['id']] = array('question' => $cur_item['question'], 'answers' => $cur_item['answers']);
-		}
+		$output['questions'][$row['id']] = array('question' => $row['question'], 'answers' => $row['answers']);
 	}
 	$output['cached'] = time();
 
@@ -52,13 +44,13 @@ function pun_stop_bots_add_question($question, $answers)
 {
 	global $forum_db, $pun_stop_bots_questions, $lang_pun_stop_bots;
 
-	if (!empty($pun_stop_bots_questions['questions']) && array_search($question, array_map(create_function('$data', 'return $data[\'question\'];'), $pun_stop_bots_questions['questions'])) !== FALSE)
+	if (!empty($pun_stop_bots_questions['questions']) && array_search(utf8_strtolower($question), array_map(function ($data) {return utf8_strtolower($data['question']);}, $pun_stop_bots_questions['questions'])) !== false)
 		return $lang_pun_stop_bots['Management err dupe question'];
 
 	$query = array(
 		'INSERT'	=>	'question, answers',
 		'INTO'		=>	'pun_stop_bots_questions',
-		'VALUES'	=>	'\''.$forum_db->escape($question).'\', \''.$forum_db->escape($answers).'\''
+		'VALUES'	=>	'\''.$forum_db->escape($question).'\', \''.$forum_db->escape(utf8_strtolower($answers)).'\''
 	);
 	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
 
@@ -76,14 +68,15 @@ function pun_stop_bots_update_question($question_id, $question, $answers)
 		'WHERE'		=>	'id = '.$question_id
 	);
 	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+	$row = $forum_db->fetch_assoc($result);
 
-	$ids = array_keys($pun_stop_bots_questions['questions']);
-	if (($cache_index = array_search($question_id, $ids)) === FALSE)
+	if (empty($row))
 		return $lang_pun_stop_bots['Management err no question'];
 	else
 	{
-		$old_question = $pun_stop_bots_questions['questions'][$ids[$cache_index]]['question'];
-		$old_answers  = $pun_stop_bots_questions['questions'][$ids[$cache_index]]['answers'];
+		$old_question = $row['question'];
+		$old_answers  = $row['answers'];
+		$answers = utf8_strtolower($answers);
 	}
 
 	$update_fields = array();
@@ -110,7 +103,7 @@ function pun_stop_bots_delete_question($question_id)
 {
 	global $forum_db, $pun_stop_bots_questions, $lang_pun_stop_bots;
 
-	if (!empty($pun_stop_bots_questions['questions']) && (array_search($question_id, array_keys($pun_stop_bots_questions['questions'])) === FALSE))
+	if (!empty($pun_stop_bots_questions['questions']) && !isset($pun_stop_bots_questions['questions'][$question_id]))
 		return $lang_pun_stop_bots['Management err no question'];
 
 	$query = array(
@@ -127,7 +120,10 @@ function pun_stop_bots_compare_answers($answer, $question_id)
 {
 	global $forum_db, $forum_user, $pun_stop_bots_questions, $lang_pun_stop_bots;
 
-	return in_array($answer, explode(',', $pun_stop_bots_questions['questions'][$question_id]['answers']));
+	if (empty($pun_stop_bots_questions['questions'][$question_id]['answers']))
+		return false;
+
+	return in_array(utf8_strtolower($answer), explode(',', $pun_stop_bots_questions['questions'][$question_id]['answers']));
 }
 
 
@@ -162,20 +158,20 @@ function pun_stop_bots_check_cookie()
 		$pun_stop_bots_cookie = explode('|', base64_decode($_COOKIE[PUN_STOP_BOTS_COOKIE_NAME]));
 		if (count($pun_stop_bots_cookie) != 4)
 		{
-			return FALSE;
+			return false;
 		}
 		else
 		{
 			list($user_id, $question_hash, $expire_time, $expire_hash) = $pun_stop_bots_cookie;
 			if ($forum_user['id'] == $user_id && forum_hash($question_id, $forum_user['salt']) == $question_hash && sha1($forum_user['salt'].forum_hash($expire_time, $forum_user['salt'])) == $expire_hash)
-				return TRUE;
+				return true;
 			else
-				return FALSE;
+				return false;
 		}
 	}
 	else
 	{
-		return FALSE;
+		return false;
 	}
 }
 
@@ -191,7 +187,7 @@ function pun_stop_bots_generate_guest_question_id()
 	$pun_stop_bots_query = array(
 		'UPDATE'	=>	'online',
 		'SET'		=>	'pun_stop_bots_question_id = '.$new_question_id,
-		'WHERE'		=>	'ident = \''.$forum_user['ident'].'\''
+		'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
 	);
 	$forum_db->query_build($pun_stop_bots_query) or error(__FILE__, __LINE__);
 
@@ -220,7 +216,5 @@ function pun_stop_bots_generate_user_question_id()
 
 function pun_stop_bots_prepare_answers($answers)
 {
-	return preg_replace('~,[\s]+~', ',', $answers);
+	return forum_trim(preg_replace('%\s*,\s*%u', ',', $answers), ", \t\n\r\0\x0B\xC2\xA0");
 }
-
-?>
