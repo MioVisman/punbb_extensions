@@ -28,7 +28,6 @@ function pun_stop_bots_generate_cache()
 	{
 		$output['questions'][$row['id']] = array('question' => $row['question'], 'answers' => $row['answers']);
 	}
-	$output['cached'] = time();
 
 	if (!defined('FORUM_CACHE_FUNCTIONS_LOADED'))
 		require FORUM_ROOT.'include/cache.php';
@@ -53,6 +52,8 @@ function pun_stop_bots_add_question($question, $answers)
 		'VALUES'	=>	'\''.$forum_db->escape($question).'\', \''.$forum_db->escape(utf8_strtolower($answers)).'\''
 	);
 	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+	pun_stop_bots_generate_cache();
 
 	return true;
 }
@@ -93,6 +94,8 @@ function pun_stop_bots_update_question($question_id, $question, $answers)
 			'WHERE'		=>	'id = '.$question_id
 		);
 		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		pun_stop_bots_generate_cache();
 	}
 
 	return true;
@@ -111,6 +114,8 @@ function pun_stop_bots_delete_question($question_id)
 		'WHERE'		=>	'id = '.$question_id
 	);
 	$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+	pun_stop_bots_generate_cache();
 
 	return true;
 }

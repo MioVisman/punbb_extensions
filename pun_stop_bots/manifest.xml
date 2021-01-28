@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>pun_stop_bots</id>
 	<title>Stop spam from bots</title>
-	<version>0.3.3.1</version>
+	<version>0.3.3.2</version>
 	<description>The extension will ask some questions to prevent bot registration and posting.</description>
 	<author>PunBB Development Team</author>
 
@@ -90,7 +90,7 @@
 				if (file_exists(FORUM_CACHE_DIR.'cache_pun_stop_bots.php'))
 					include FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
 
-				if (!defined('PUN_STOP_BOTS_CACHE_LOADED') || $pun_stop_bots_questions['cached'] < (time() - 43200))
+				if (!defined('PUN_STOP_BOTS_CACHE_LOADED'))
 				{
 					pun_stop_bots_generate_cache();
 					require FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
@@ -176,11 +176,13 @@
 				include $ext_info['path'].'/functions.php';
 				if (file_exists(FORUM_CACHE_DIR.'cache_pun_stop_bots.php'))
 					include FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
-				if (!defined('PUN_STOP_BOTS_CACHE_LOADED') || $pun_stop_bots_questions['cached'] < (time() - 43200))
+
+				if (!defined('PUN_STOP_BOTS_CACHE_LOADED'))
 				{
 					pun_stop_bots_generate_cache();
 					require FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
 				}
+
 				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php'))
 					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 				else
@@ -270,7 +272,7 @@
 			include $ext_info['path'].'/functions.php';
 			if (file_exists(FORUM_CACHE_DIR.'cache_pun_stop_bots.php'))
 				include FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
-			if (!defined('PUN_STOP_BOTS_CACHE_LOADED') || $pun_stop_bots_questions['cached'] < (time() - 43200))
+			if (!defined('PUN_STOP_BOTS_CACHE_LOADED'))
 			{
 				pun_stop_bots_generate_cache();
 				require FORUM_CACHE_DIR.'cache_pun_stop_bots.php';
@@ -304,10 +306,7 @@
 						if ($stop_bots_error !== true)
 							$forum_page['errors'][] = $stop_bots_error;
 						else
-						{
-							pun_stop_bots_generate_cache();
 							redirect(forum_link($forum_url['pun_stop_bots_section']), $lang_pun_stop_bots['Management question add'].' '.$lang_admin_common['Redirect']);
-						}
 					}
 				}
 				else if (isset($_POST['update']) && !empty($pun_stop_bots_questions))
@@ -328,10 +327,7 @@
 						if ($stop_bots_error !== true)
 							$forum_page['errors'][] = $stop_bots_error;
 						else
-						{
-							pun_stop_bots_generate_cache();
 							redirect(forum_link($forum_url['pun_stop_bots_section']), $lang_pun_stop_bots['Management question add'].' '.$lang_admin_common['Redirect']);
-						}
 					}
 				}
 				else if (isset($_POST['remove']) && !empty($pun_stop_bots_questions))
@@ -344,10 +340,7 @@
 					if ($stop_bots_error !== true)
 						$forum_page['errors'][] = $stop_bots_error;
 					else
-					{
-						pun_stop_bots_generate_cache();
 						redirect(forum_link($forum_url['pun_stop_bots_section']), $lang_pun_stop_bots['Management question remove'].' '.$lang_admin_common['Redirect']);
-					}
 				}
 
 				$forum_page['crumbs'] = array(
