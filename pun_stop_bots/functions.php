@@ -10,8 +10,6 @@
 
 if (!defined('FORUM')) die();
 
-define('PUN_STOP_BOTS_COOKIE_NAME', 'pun_stop_bots_cookie');
-
 function pun_stop_bots_generate_cache()
 {
 	global $forum_db;
@@ -132,87 +130,36 @@ function pun_stop_bots_compare_answers($answer, $question_id)
 }
 
 
-function pun_stop_bots_set_cookie($question_id)
+function pun_stop_bots_generate_question_id($setOk = false)
 {
-	global $forum_user, $cookie_name, $cookie_path, $cookie_domain, $cookie_secure;
+	global $forum_db, $forum_user, $pun_stop_bots_questions;
 
-	$now = time();
-	$expire_time = $now + 1209600;
-	$expire_hash = sha1($forum_user['salt'].forum_hash($expire_time, $forum_user['salt']));
-	$question_hash = forum_hash($question_id, $forum_user['salt']);
-
-	forum_setcookie(PUN_STOP_BOTS_COOKIE_NAME, base64_encode($forum_user['id'].'|'.$question_hash.'|'.$expire_time.'|'.$expire_hash), $expire_time);
-}
-
-
-function pun_stop_bots_check_cookie()
-{
-	global $forum_user, $forum_db;
-
-	$query = array(
-		'SELECT'	=>	'pun_stop_bots_question_id',
-		'FROM'		=>	'users',
-		'WHERE'		=>	'id = '.$forum_user['id']
-	);
-	$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
-	$row = $forum_db->fetch_assoc($result);
-
-	if ($row)
+	if ($setOk)
 	{
-		$question_id = $row['pun_stop_bots_question_id'];
-		$pun_stop_bots_cookie = explode('|', base64_decode($_COOKIE[PUN_STOP_BOTS_COOKIE_NAME]));
-		if (count($pun_stop_bots_cookie) != 4)
-		{
-			return false;
-		}
-		else
-		{
-			list($user_id, $question_hash, $expire_time, $expire_hash) = $pun_stop_bots_cookie;
-			if ($forum_user['id'] == $user_id && forum_hash($question_id, $forum_user['salt']) == $question_hash && sha1($forum_user['salt'].forum_hash($expire_time, $forum_user['salt'])) == $expire_hash)
-				return true;
-			else
-				return false;
-		}
+		$new_question_id = $forum_user['is_guest'] ? 'NULL' : 2147483647;
 	}
 	else
 	{
-		return false;
+		$question_ids = array_keys($pun_stop_bots_questions['questions']);
+		$new_question_id = $question_ids[array_rand($question_ids)];
 	}
-}
 
-
-function pun_stop_bots_generate_guest_question_id()
-{
-	global $forum_db, $forum_user, $pun_stop_bots_questions;
-
-	$question_ids = array_keys($pun_stop_bots_questions['questions']);
-	$new_question_id = $question_ids[array_rand($question_ids)];
-	unset($question_ids);
-
-	$pun_stop_bots_query = array(
-		'UPDATE'	=>	'online',
-		'SET'		=>	'pun_stop_bots_question_id = '.$new_question_id,
-		'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
-	);
-	$forum_db->query_build($pun_stop_bots_query) or error(__FILE__, __LINE__);
-
-	return $new_question_id;
-}
-
-
-function pun_stop_bots_generate_user_question_id()
-{
-	global $forum_db, $forum_user, $pun_stop_bots_questions;
-
-	$question_ids = array_keys($pun_stop_bots_questions['questions']);
-	$new_question_id = $question_ids[array_rand($question_ids)];
-	unset($question_ids);
-
-	$pun_stop_bots_query = array(
-		'UPDATE'	=>	'users',
-		'SET'		=>	'pun_stop_bots_question_id = '.$new_question_id,
-		'WHERE'		=>	'id = '.$forum_user['id']
-	);
+	if ($forum_user['is_guest'])
+	{
+		$pun_stop_bots_query = array(
+			'UPDATE'	=>	'online',
+			'SET'		=>	'pun_stop_bots_question_id = '.$new_question_id,
+			'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
+		);
+	}
+	else
+	{
+		$pun_stop_bots_query = array(
+			'UPDATE'	=>	'users',
+			'SET'		=>	'pun_stop_bots_question_id = '.$new_question_id,
+			'WHERE'		=>	'id = '.$forum_user['id']
+		);
+	}
 	$forum_db->query_build($pun_stop_bots_query) or error(__FILE__, __LINE__);
 
 	return $new_question_id;

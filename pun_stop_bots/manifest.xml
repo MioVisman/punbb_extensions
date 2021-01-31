@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>pun_stop_bots</id>
 	<title>Stop spam from bots</title>
-	<version>0.3.3.2</version>
+	<version>0.3.3.3</version>
 	<description>The extension will ask some questions to prevent bot registration and posting.</description>
 	<author>PunBB Development Team</author>
 
@@ -79,7 +79,7 @@
 
 	<hooks>
 		<hook id="fn_set_default_user_qr_get_default_user"><![CDATA[
-			$query['SELECT'] .= ', o.ident';
+			$query['SELECT'] .= ', o.ident, o.pun_stop_bots_question_id';
 		]]></hook>
 
 
@@ -102,46 +102,23 @@
 					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
 
 				$pun_stop_bots_true_answer = false;
-				if (isset($_POST['pun_stop_bots_submit']))
-				{
-					$query = array(
-						'SELECT'	=>	'pun_stop_bots_question_id',
-						'FROM'		=>	'online',
-						'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
-					);
-					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
-					$row = $forum_db->fetch_assoc($result);
 
-					if ($row)
-						$question_id = $row['pun_stop_bots_question_id'];
-					else
+				if (isset($_POST['pun_stop_bots_answer']))
+				{
+					if (empty($forum_user['pun_stop_bots_question_id']))
 						message($lang_common['Bad request']);
 
-					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim($_POST['pun_stop_bots_answer']) : null;
+					$answer = forum_trim($_POST['pun_stop_bots_answer']);
 					if (!empty($answer))
-						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $question_id);
-					else
-						$pun_stop_bots_true_answer = false;
+						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $forum_user['pun_stop_bots_question_id']);
 
-					if (!$pun_stop_bots_true_answer)
-					{
-						$new_question_id = pun_stop_bots_generate_guest_question_id();
-					}
-					else
-					{
-						$query = array(
-							'UPDATE'	=>	'online',
-							'SET'		=>	'pun_stop_bots_question_id = NULL',
-							'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
-						);
-						$forum_db->query_build($query) or error(__FILE__, __LINE__);
-					}
+					if ($pun_stop_bots_true_answer)
+						pun_stop_bots_generate_question_id(true);
 				}
 
 				if (!$pun_stop_bots_true_answer)
 				{
-					if (!isset($new_question_id))
-						$new_question_id = pun_stop_bots_generate_guest_question_id();
+					$new_question_id = pun_stop_bots_generate_question_id();
 
 					$forum_page['crumbs'] = array(
 						array($forum_config['o_board_title'], forum_link($forum_url['index'])),
@@ -150,7 +127,9 @@
 
 					$forum_page['form_handler'] = $_SERVER['REQUEST_URI'];
 					$forum_page['question'] = $pun_stop_bots_questions['questions'][$new_question_id]['question'];
+					unset($_POST['pun_stop_bots_answer'], $_POST['pun_stop_bots_submit']);
 					$forum_page['hidden_fields'] = $_POST;
+
 					define('FORUM_PAGE', 'PUN_STOP_BOTS_PAGE');
 					require FORUM_ROOT.'header.php';
 
@@ -171,7 +150,7 @@
 
 
 		<hook id="po_form_submitted"><![CDATA[
-			if (!$forum_page['is_admmod'] && !isset($_POST['preview']))
+			if (!$forum_page['is_admmod'] && !isset($_POST['preview']) && 2147483647 != $forum_user['pun_stop_bots_question_id'])
 			{
 				include $ext_info['path'].'/functions.php';
 				if (file_exists(FORUM_CACHE_DIR.'cache_pun_stop_bots.php'))
@@ -190,55 +169,24 @@
 
 				$pun_stop_bots_true_answer = false;
 
-				//Check up the cookie.
-				if (isset($_COOKIE[PUN_STOP_BOTS_COOKIE_NAME]))
-					$pun_stop_bots_true_answer = pun_stop_bots_check_cookie();
-				//Check up the entered question.
-				else if (isset($_POST['pun_stop_bots_submit']))
+				if (!$forum_user['is_guest'] && 2147483647 == $forum_user['pun_stop_bots_question_id'])
+					$pun_stop_bots_true_answer = true;
+				elseif (isset($_POST['pun_stop_bots_answer']))
 				{
-					$query = array(
-						'SELECT'	=> 'pun_stop_bots_question_id',
-						'FROM'		=> $forum_user['is_guest'] ? 'online' : 'users',
-						'WHERE'		=> $forum_user['is_guest'] ? 'ident = \''.$forum_db->escape($forum_user['ident']).'\'' : 'id = '.$forum_user['id']
-					);
-					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
-					$row = $forum_db->fetch_assoc($result);
-
-					if ($row)
-						$question_id = $row['pun_stop_bots_question_id'];
-					else
+					if (empty($forum_user['pun_stop_bots_question_id']))
 						message($lang_common['Bad request']);
 
-					$answer = isset($_POST['pun_stop_bots_answer']) ? forum_trim($_POST['pun_stop_bots_answer']) : null;
+					$answer = forum_trim($_POST['pun_stop_bots_answer']);
 					if (!empty($answer))
-						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $question_id);
-					else
-						$pun_stop_bots_true_answer = false;
-					//Generate new question in case of incorrect answer.
-					if (!$pun_stop_bots_true_answer)
-						$new_question_id = $forum_user['is_guest'] ? pun_stop_bots_generate_guest_question_id() : pun_stop_bots_generate_user_question_id();
+						$pun_stop_bots_true_answer = pun_stop_bots_compare_answers($answer, $forum_user['pun_stop_bots_question_id']);
+
+					if ($pun_stop_bots_true_answer)
+						pun_stop_bots_generate_question_id(true);
 				}
 
-				// If it is a user and answer is correct set new cookie.
-				if (!$forum_user['is_guest'] && !isset($_COOKIE[PUN_STOP_BOTS_COOKIE_NAME]) && $pun_stop_bots_true_answer)
+				if (!$pun_stop_bots_true_answer)
 				{
-					$new_question_id = $forum_user['is_guest'] ? pun_stop_bots_generate_guest_question_id() : pun_stop_bots_generate_user_question_id();
-					pun_stop_bots_set_cookie($new_question_id);
-				}
-				else if ($forum_user['is_guest'] && $pun_stop_bots_true_answer)
-				{
-					$query = array(
-						'UPDATE'	=>	'online',
-						'SET'		=>	'pun_stop_bots_question_id = NULL',
-						'WHERE'		=>	'ident = \''.$forum_db->escape($forum_user['ident']).'\''
-					);
-					$forum_db->query_build($query) or error(__FILE__, __LINE__);
-				}
-				else if (!$pun_stop_bots_true_answer)
-				{
-					//If it is first request of the page, we need to generate new question.
-					if (!isset($new_question_id))
-						$new_question_id =  $forum_user['is_guest'] ? pun_stop_bots_generate_guest_question_id() : pun_stop_bots_generate_user_question_id();
+					$new_question_id = pun_stop_bots_generate_question_id();
 
 					$forum_page['crumbs'] = array(
 						array($forum_config['o_board_title'], forum_link($forum_url['index'])),
@@ -247,6 +195,7 @@
 
 					$forum_page['form_handler'] = $_SERVER['REQUEST_URI'];
 					$forum_page['question'] = $pun_stop_bots_questions['questions'][$new_question_id]['question'];
+					unset($_POST['pun_stop_bots_answer'], $_POST['pun_stop_bots_submit']);
 					$forum_page['hidden_fields'] = $_POST;
 
 					define('FORUM_PAGE', 'pun_stop_bots_page');
@@ -309,7 +258,7 @@
 							redirect(forum_link($forum_url['pun_stop_bots_section']), $lang_pun_stop_bots['Management question add'].' '.$lang_admin_common['Redirect']);
 					}
 				}
-				else if (isset($_POST['update']) && !empty($pun_stop_bots_questions))
+				elseif (isset($_POST['update']) && !empty($pun_stop_bots_questions))
 				{
 					$question_id = intval(key($_POST['update']));
 					if ($question_id < 1)
@@ -330,7 +279,7 @@
 							redirect(forum_link($forum_url['pun_stop_bots_section']), $lang_pun_stop_bots['Management question add'].' '.$lang_admin_common['Redirect']);
 					}
 				}
-				else if (isset($_POST['remove']) && !empty($pun_stop_bots_questions))
+				elseif (isset($_POST['remove']) && !empty($pun_stop_bots_questions))
 				{
 					$question_id = intval(key($_POST['remove']));
 					if ($question_id < 1)
