@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * Please do not delete
+ *
+ * sva_do_not_delete
+ * Copyright (C) 2021 Visman (mio.visman@yandex.ru)
+ * License http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ */
+-->
+
+<extension engine="1.0">
+	<id>sva_do_not_delete</id>
+	<title>Please do not delete</title>
+	<version>1.0.0</version>
+	<description>Moderators rights to delete topics are assigned as for ordinary users (use groups settings).</description>
+	<author>Visman (mio.visman@yandex.ru)</author>
+
+	<minversion>1.4.4</minversion>
+	<maxtestedon>1.4.4</maxtestedon>
+
+	<hooks>
+		<hook id="vt_row_pre_post_actions_merge"><![CDATA[
+		if (
+			$forum_user['g_delete_topics'] == '0'
+			&& $forum_user['g_id'] != FORUM_ADMIN
+			&& $forum_page['is_admmod']
+			&& $forum_page['start_from'] + $forum_page['item_count'] == 1
+		) {
+			unset($forum_page['post_actions']['delete']);
+		}
+		]]></hook>
+
+		<hook id="vt_pre_header_load"><![CDATA[
+		if (
+			$forum_user['g_delete_topics'] == '0'
+			&& $forum_user['g_id'] != FORUM_ADMIN
+			&& $forum_page['is_admmod']
+		) {
+			unset($forum_page['main_foot_options']['delete']);
+		}
+		]]></hook>
+
+		<hook id="dl_post_selected"><![CDATA[
+		if (
+			$cur_post['is_topic']
+			&& $forum_user['g_id'] != FORUM_ADMIN
+			&& $forum_user['g_delete_topics'] == '0'
+		) {
+			message($lang_common['No permission']);
+		}
+		]]></hook>
+
+		<hook id="mr_topic_actions_pre_mod_option_output"><![CDATA[
+		if (
+			$forum_user['g_id'] != FORUM_ADMIN
+			&& $forum_user['g_delete_topics'] == '0'
+		) {
+			unset($forum_page['mod_options']['mod_delete']);
+		}
+		]]></hook>
+
+		<hook id="mr_delete_topics_pre_header_load"><![CDATA[
+		if (
+			$forum_user['g_id'] != FORUM_ADMIN
+			&& $forum_user['g_delete_topics'] == '0'
+		) {
+			message($lang_common['No permission']);
+		}
+		]]></hook>
+	</hooks>
+</extension>
