@@ -622,9 +622,9 @@ function pun_pm_preview($receiver, $subject, $body, &$errors)
 
 function pun_pm_next_reply($str)
 {
-	if (substr($str, 0, 4) == 'Re: ')
-		return 'Re[2]: ' . substr($str, 4);
-	$str1 = preg_replace('#^Re\[(\d{1,10})\]: #eu', '\'Re[\'.(\\1 + 1).\']: \'', $str);
+	$str1 = preg_replace_callback('%^Re(?:\[(\d{1,10})\])?:%', function($matches) {
+		return empty($matches[1]) ? 'Re[2]:' : 'Re[' . ($matches[1] + 1) . ']:';
+	}, $str);
 	return $str == $str1 ? 'Re: ' . $str : $str1;
 }
 
