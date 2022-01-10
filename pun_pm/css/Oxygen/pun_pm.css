@@ -106,3 +106,19 @@
 	padding: 0.5em 1em;
 	position: relative;
 }
+
+@media screen and (max-width: 800px) {
+	.pun_pm_list td, .pun_pm_list th {
+		padding: .3em;
+	}
+
+	.pun_pm_list .td5, .pun_pm_list .td3 {
+		width: 10em;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.pun_pm_list .td5 {
+		display: none;
+	}
+}
