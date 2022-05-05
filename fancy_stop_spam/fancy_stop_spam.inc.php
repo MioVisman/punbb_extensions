@@ -920,11 +920,11 @@ class Fancy_stop_spam
             $post_message = preg_replace('%(?:\[url[=\]])?(?:https?://)?(?:www\.)?'. preg_quote($host, '%') . '(?![.])\S+%i', '', $post_message);
         }
 
-        $patterns = [
+        $patterns = array(
             '%\[url[=\]].*?\[/url\]%i',
             '%https?://\S+%i',
             '%www\.[\p{L}\p{N}]\S+%iu',
-        ];
+        );
         if (null !== preg_replace($patterns, '', $post_message, -1, $count)) {
             return $count;
         } else {
